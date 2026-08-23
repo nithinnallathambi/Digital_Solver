@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Logic Engine & 1-6 Var K-Map Solver</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #0ea5e9;
+            --secondary-hover: #0284c7;
+            --accent-cyan: #00f3ff;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --accent-purple: #c084fc;
+            --accent-violet: #8b5cf6;
+            
+            --bg-main: #060913;
+            --bg-card: rgba(15, 23, 42, 0.72);
+            --bg-card-hover: rgba(22, 33, 58, 0.82);
+            --bg-glass: rgba(13, 19, 36, 0.8);
+            --bg-input: rgba(7, 12, 24, 0.85);
+            
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --text-dim: #64748b;
+            --border-color: rgba(139, 92, 246, 0.22);
+            --border-highlight: rgba(0, 243, 255, 0.45);
+            
+            --shadow-glow: 0 0 35px rgba(99, 102, 241, 0.25);
+            --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border-color);
+            --radius-pill: 9999px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Full Screen Background Motion Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            display: block;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060913;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b82f6;
+        }
+
+        /* Top Infinite Auto-Scrolling Announcement Marquee Bar */
+        .marquee-container {
+            background: linear-gradient(90deg, #312e81 0%, #1e1b4b 25%, #0284c7 50%, #4c1d95 75%, #312e81 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            padding: 0.55rem 0;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            z-index: 101;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .marquee-track {
+            display: inline-flex;
+            gap: 2rem;
+            animation: marqueeScroll 28s linear infinite;
+        }
+
+        .marquee-container:hover .marquee-track {
+            animation-play-state: paused;
+        }
+
+        .marquee-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .marquee-item span.dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        @keyframes marqueeScroll {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* Header Styling */
+        header.geniani-header {
+            background: rgba(6, 9, 19, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+            z-index: 100;
+            padding: 1.75rem 1.5rem 1.5rem 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.85rem;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            color: #a5b4fc;
+            padding: 0.45rem 1.25rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+        }
+
+        .header-badge .badge-pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-cyan);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.3); }
+            100% { opacity: 0.4; transform: scale(0.9); }
+        }
+
+        header h1 {
+            font-size: 2.35rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 10%, #a5b4fc 40%, #00f3ff 80%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.25;
+            text-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        header p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.98rem;
+            max-width: 780px;
+            font-weight: 400;
+        }
+
+        /* Main Container & Card Styling */
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-purple), transparent);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-highlight);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 243, 255, 0.15);
+        }
+
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .card h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+            letter-spacing: 0.01em;
+        }
+
+        input[type="text"], input[type="password"], textarea, .styled-select {
+            width: 100%;
+            padding: 0.9rem 1.15rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.98rem;
+            color: #ffffff;
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 1.25rem;
+            transition: all 0.25s ease;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, .styled-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            background: rgba(7, 12, 24, 0.95);
+            box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.25), inset 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="text"]::placeholder, textarea::placeholder {
+            color: var(--text-dim);
+        }
+
+        .styled-select {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2300f3ff" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 1.25rem center;
+            background-size: 16px 12px;
+            padding-right: 2.75rem;
+        }
+
+        .tabs-wrapper {
+            background: rgba(7, 12, 24, 0.75);
+            padding: 0.45rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.75rem;
+        }
+
+        .tabs {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+        }
+
+        .tab {
+            flex: 1;
+            white-space: nowrap;
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 0.8rem 1.1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+            border-color: rgba(0, 243, 255, 0.5);
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Radio Options */
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+            padding: 0.85rem 1.15rem;
+            background: rgba(7, 12, 24, 0.7);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .radio-group label {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #f8fafc;
+        }
+
+        .radio-group input[type="radio"] {
+            accent-color: var(--accent-cyan);
+            width: 17px;
+            height: 17px;
+        }
+
+        button.primary-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #0284c7 100%);
+            color: #ffffff;
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            padding: 0.95rem 1.8rem;
+            font-size: 0.98rem;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 15px rgba(0, 243, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button.primary-btn:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 50%, #0369a1 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6), 0 0 25px rgba(0, 243, 255, 0.4);
+            border-color: var(--accent-cyan);
+        }
+
+        button.primary-btn:active {
+            transform: translateY(0);
+        }
+
+        button.secondary-btn {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.4rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            margin-bottom: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        button.secondary-btn:hover {
+            background: #334155;
+            border-color: var(--accent-cyan);
+            transform: translateY(-1px);
+        }
+
+        .error {
+            color: var(--accent-rose);
+            margin-top: 1rem;
+            font-weight: 600;
+            text-align: center;
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            padding: 0.85rem;
+            border-radius: var(--radius-md);
+            display: none;
+        }
+
+        .error:not(:empty) {
+            display: block;
+        }
+
+        .multi-output-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .output-header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 850px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .tabs { flex-wrap: wrap; }
+            header h1 { font-size: 1.8rem; }
+        }
+
+        .result-box {
+            background: rgba(7, 12, 24, 0.75);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .verification {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .verification.success {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+
+        .verification.fail {
+            background-color: rgba(244, 63, 94, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+        }
+
+        h3 { font-size: 1.2rem; color: #f8fafc; font-weight: 700; margin-bottom: 1rem; }
+        h4 { font-size: 1.05rem; color: #cbd5e1; margin-bottom: 0.8rem; }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+            background: rgba(4, 8, 18, 0.95);
+            padding: 0.6rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.98rem;
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            display: inline-block;
+            margin-top: 0.25rem;
+            word-break: break-all;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Truth Table Table */
+        .tt-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: rgba(4, 8, 18, 0.9);
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: center; }
+        th, td {
+            padding: 0.65rem;
+            font-size: 0.88rem;
+            border-bottom: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+        }
+        th:last-child, td:last-child { border-right: none; }
+        th {
+            background-color: #1e293b;
+            color: #a5b4fc;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td.tt-one { color: var(--accent-green); font-weight: bold; text-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+        td.tt-zero { color: var(--text-muted); }
+        td.tt-x { color: var(--accent-amber); font-weight: bold; text-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
+
+        select.tt-select {
+            background: #060913;
+            color: var(--accent-cyan);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* K-Map Wrapper */
+        .kmap-wrapper {
+            background: rgba(7, 12, 24, 0.75);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Circuits */
+        .circuit-box {
+            background: rgba(7, 12, 24, 0.65);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .svg-container {
+            overflow: auto;
+            background: #040711;
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            max-height: 550px;
+            width: 100%;
+            box-shadow: inset 0 2px 15px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .svg-container svg { display: block; margin: 0 auto; }
+
+        /* Block Diagram */
+        .block-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2.5rem;
+            background: #040711;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .block-box {
+            background: #1e293b;
+            border: 2px solid var(--accent-cyan);
+            border-radius: var(--radius-md);
+            padding: 2rem 3rem;
+            text-align: center;
+            position: relative;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #ffffff;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.25);
+            min-width: 180px;
+        }
+
+        .block-inputs, .block-outputs {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            position: absolute;
+            top: 0; bottom: 0;
+        }
+        .block-inputs { left: -75px; }
+        .block-outputs { right: -75px; }
+        
+        .block-pin {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-cyan);
+        }
+        .block-pin.in::after {
+            content: ''; display: inline-block;
+            width: 35px; height: 2px; background: var(--primary);
+            margin-left: 8px;
+        }
+        .block-pin.out::before {
+            content: ''; display: inline-block;
+            width: 35px; height: 2px; background: var(--primary);
+            margin-right: 8px;
+        }
+
+        /* Scroll Top Button */
+        #scrollTopBtn {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 99;
+            font-size: 1.25rem;
+            border: none;
+            outline: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.6);
+            transition: all 0.3s ease;
+        }
+        #scrollTopBtn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 8px 30px rgba(0, 243, 255, 0.6);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(6, 9, 19, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Full-screen animated motion background canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="marquee-container" aria-label="Engine Capabilities Ticker">
+        <div class="marquee-track">
+            <div class="marquee-item">⚡ 1 TO 6 VARIABLE KARNAUGH MAPS <span class="dot"></span></div>
+            <div class="marquee-item">🔬 QUINE-MCCLUSKEY OPTIMIZER <span class="dot"></span></div>
+            <div class="marquee-item">🛠️ UNIVERSAL NAND & NOR SYNTHESIZER <span class="dot"></span></div>
+            <div class="marquee-item">🤖 GEMINI AI LOGIC ASSISTANT <span class="dot"></span></div>
+            <div class="marquee-item">🧮 ARITHMETIC CIRCUIT GENERATOR <span class="dot"></span></div>
+            <div class="marquee-item">⚡ 1 TO 6 VARIABLE KARNAUGH MAPS <span class="dot"></span></div>
+            <div class="marquee-item">🔬 QUINE-MCCLUSKEY OPTIMIZER <span class="dot"></span></div>
+            <div class="marquee-item">🛠️ UNIVERSAL NAND & NOR SYNTHESIZER <span class="dot"></span></div>
+            <div class="marquee-item">🤖 GEMINI AI LOGIC ASSISTANT <span class="dot"></span></div>
+            <div class="marquee-item">🧮 ARITHMETIC CIRCUIT GENERATOR <span class="dot"></span></div>
+        </div>
+    </div>
+
+    <header class="geniani-header">
+        <div class="header-content">
+            <div class="header-badge">
+                <span class="badge-pulse"></span>
+                Universal Logic Engine v3.5
+            </div>
+            <h1>Advanced Digital Logic Synthesizer</h1>
+            <p class="subtitle">Minimize boolean expressions, solve Quine-McCluskey prime implicants, generate visual 1 to 6 variable Karnaugh Maps (K-Maps) with multi-grid groupings, and synthesize universal logic circuits.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card" id="aiAssistantSection">
+            <div class="card-header-row">
+                <h2>🤖 AI Logic Assistant (Google Gemini)</h2>
+                <span class="header-badge" style="font-size:0.7rem; padding:0.25rem 0.75rem;">AI Powered</span>
+            </div>
+            <div>
+                
+
+                <label for="prompt">Prompt Description</label>
+                <textarea id="prompt" placeholder="Ask AI to help design or optimize a digital logic circuit (e.g. 'Create a 3-input majority voter circuit')..."></textarea>
+
+                <button id="submitBtn" class="primary-btn">Ask AI Assistant ⚡</button>
+
+                <label style="margin-top: 1.25rem;">Response Output</label>
+                <div id="responseOutput" class="code-font" style="min-height: 80px; width: 100%; white-space: pre-wrap; margin-top: 0.5rem; display: block; color: #f8fafc;">Response will appear here...</div>
+            </div>
+        </section>
+
+        <section class="card input-section" id="solverSection">
+            <div class="tabs-wrapper">
+                <nav class="tabs" aria-label="Synthesis Input Options">
+                    <button class="tab active" data-target="tab-expr">
+                        <span>⚡</span> Expression
+                    </button>
+                    <button class="tab" data-target="tab-minmax">
+                        <span>📊</span> Min/Max Terms
+                    </button>
+                    <button class="tab" data-target="tab-tt">
+                        <span>📋</span> Truth Table
+                    </button>
+                    <button class="tab" data-target="tab-arithmetic">
+                        <span>🧮</span> Arithmetic Circuits
+                    </button>
+                </nav>
+            </div>
+
+            <!-- TAB 1: Boolean Expression -->
+            <div class="tab-content active" id="tab-expr">
+                <label for="inputExpr">Boolean Expression (Use &, |, ~, ^ for AND, OR, NOT, XOR):</label>
+                <input type="text" id="inputExpr" placeholder="e.g. A & B | ~C & D | E & ~F">
+                <button id="btnSynthesizeExpr" class="primary-btn synthesize-btn">Synthesize & Solve K-Map ⚡</button>
+            </div>
+
+            <!-- TAB 2: Minterms / Maxterms -->
+            <div class="tab-content" id="tab-minmax">
+                <label for="inputVarsMin">Variables (comma separated, 1-6 variables):</label>
+                <input type="text" id="inputVarsMin" placeholder="e.g. A, B, C, D, E, F">
+
+                <div class="radio-group">
+                    <label><input type="radio" name="termType" value="minterms" checked> Minterms (Σm)</label>
+                    <label><input type="radio" name="termType" value="maxterms"> Maxterms (ΠM)</label>
+                </div>
+
+                <label id="lblTerms" for="inputTerms">Minterms (comma separated integers, 0-63):</label>
+                <input type="text" id="inputTerms" placeholder="e.g. 0, 1, 4, 5, 12, 13, 32, 33, 48, 63">
+
+                <label for="inputDontCares">Don't Cares (comma separated integers, optional):</label>
+                <input type="text" id="inputDontCares" placeholder="e.g. 2, 10, 34">
+                <button id="btnSynthesizeMinMax" class="primary-btn synthesize-btn">Synthesize & Solve K-Map ⚡</button>
+            </div>
+
+            <!-- TAB 3: Truth Table -->
+            <div class="tab-content" id="tab-tt">
+                <label for="inputVarsTT">Variables (comma separated, 1-6 variables):</label>
+                <input type="text" id="inputVarsTT" placeholder="e.g. A, B, C, D, E, F">
+                <button id="btnGenerateTTInputs" class="secondary-btn">Generate Interactive Table</button>
+                <div id="ttInputContainer"></div>
+                <button id="btnSynthesizeTT" class="primary-btn synthesize-btn" style="display:none; margin-top:1.25rem;">Synthesize & Solve K-Map ⚡</button>
+            </div>
+
+            <!-- TAB 4: Arithmetic Circuits -->
+            <div class="tab-content" id="tab-arithmetic">
+                <label for="selectArithmetic">Select Pre-Defined Arithmetic Circuit:</label>
+                <select id="selectArithmetic" class="styled-select">
+                    <option value="ha">Half Adder</option>
+                    <option value="fa">Full Adder</option>
+                    <option value="hs">Half Subtractor</option>
+                    <option value="fs">Full Subtractor</option>
+                    <option value="mult2">2x2 Multiplier</option>
+                </select>
+                <button id="btnSynthesizeArithmetic" class="primary-btn synthesize-btn" style="margin-top: 1rem;">Generate Arithmetic Circuit ⚡</button>
+            </div>
+
+            <div id="errorMsg" class="error"></div>
+        </section>
+
+        <!-- OUTPUT SECTION (Dynamically Populated) -->
+        <section id="outputs" style="display: none;"></section>
+    </main>
+
+    <button id="scrollTopBtn" title="Go to top">↑</button>
+
+    <footer>
+        <div class="container">
+            <p>100% Client-Side Engine • 1-6 Variable Quine-McCluskey & K-Map Visualizer • Universal Gates (NAND/NOR)</p>
+        </div>
+    </footer>
+
+    <script>
+    // Motion Background Engine — Binary Digital Rain
+    (function initMotionBackground() {
+        const canvas = document.getElementById('bgCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const fontSize = 16;
+        let columns = [];
+
+        function initColumns() {
+            const colCount = Math.ceil(width / fontSize);
+            columns = [];
+            for (let i = 0; i < colCount; i++) {
+                columns.push({
+                    y: Math.random() * -height,
+                    speed: 2 + Math.random() * 4,
+                    nextGlyph: 0
+                });
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initColumns();
+        });
+
+        initColumns();
+
+        // Paint the base backdrop once so trails fade over a consistent dark canvas
+        ctx.fillStyle = '#050b08';
+        ctx.fillRect(0, 0, width, height);
+
+        function renderFrame() {
+            // Semi-transparent fill creates the fading trail effect
+            ctx.fillStyle = 'rgba(5, 11, 8, 0.16)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.font = `${fontSize}px 'Fira Code', monospace`;
+            ctx.textBaseline = 'top';
+
+            for (let i = 0; i < columns.length; i++) {
+                const col = columns[i];
+                const x = i * fontSize;
+                const glyph = Math.random() > 0.5 ? '1' : '0';
+
+                // Leading glyph glows brighter; trail glyphs are dimmer green
+                ctx.fillStyle = '#e7fff2';
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = '#22ff9c';
+                ctx.fillText(glyph, x, col.y);
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = `rgba(34, 255, 156, ${0.35 + Math.random() * 0.35})`;
+                ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, col.y - fontSize);
+
+                col.y += col.speed;
+
+                if (col.y > height + fontSize * 4 && Math.random() > 0.975) {
+                    col.y = Math.random() * -200;
+                    col.speed = 2 + Math.random() * 4;
+                }
+            }
+
+            requestAnimationFrame(renderFrame);
+        }
+
+        renderFrame();
+    })();
+
+    console.log("Advanced Logic Synthesizer & 6-Var K-Map Engine Loaded");
+
+    function switchTabAndFocus(targetId) {
+        const tabBtn = document.querySelector(`.tab[data-target="${targetId}"]`);
+        if (tabBtn) tabBtn.click();
+        const section = document.getElementById('solverSection');
+        if (section) section.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function scrollToAiAssistant() {
+        const aiSec = document.getElementById('aiAssistantSection');
+        if (aiSec) aiSec.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // UI Tabs Switcher
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const targetBtn = e.currentTarget;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                targetBtn.classList.add('active');
+                document.getElementById(targetBtn.dataset.target).classList.add('active');
+                document.getElementById('outputs').style.display = 'none';
+            });
+        });
+
+        // Minterm / Maxterm Label Switch
+        document.querySelectorAll('input[name="termType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                document.getElementById('lblTerms').innerText = 
+                    e.target.value === 'minterms' ? 'Minterms (comma separated integers):' : 'Maxterms (comma separated integers):';
+            });
+        });
+
+        // Truth Table Input Generator
+        document.getElementById('btnGenerateTTInputs').addEventListener('click', () => {
+            const varsStr = document.getElementById('inputVarsTT').value;
+            const vars = [...new Set(varsStr.toUpperCase().match(/[A-Z]/g) || [])].sort();
+            if (vars.length === 0 || vars.length > 6) {
+                alert("Please enter between 1 and 6 valid variables (A-Z).");
+                return;
+            }
+            
+            let html = '<div class="tt-container"><table><thead><tr>';
+            vars.forEach(v => html += `<th>${v}</th>`);
+            html += '<th>Output</th></tr></thead><tbody>';
+            
+            const rows = Math.pow(2, vars.length);
+            for(let i=0; i<rows; i++) {
+                html += '<tr>';
+                for(let j=0; j<vars.length; j++) {
+                    let val = (i & (1 << (vars.length - 1 - j))) ? 1 : 0;
+                    html += `<td>${val}</td>`;
+                }
+                html += `<td><select id="tt-out-${i}" class="tt-select">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="X">X</option>
+                </select></td></tr>`;
+            }
+            html += '</tbody></table></div>';
+            
+            const container = document.getElementById('ttInputContainer');
+            container.innerHTML = html;
+            container.dataset.vars = vars.join(',');
+            document.getElementById('btnSynthesizeTT').style.display = 'block';
+        });
+
+        // Synthesize Button Listeners
+        document.querySelectorAll('.synthesize-btn').forEach(btn => {
+            btn.addEventListener('click', processInput);
+        });
+
+        // Scroll Top Button
+        const scrollTopBtn = document.getElementById("scrollTopBtn");
+        window.onscroll = () => { scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none"; };
+        scrollTopBtn.onclick = () => { window.scrollTo({top: 0, behavior: 'smooth'}); };
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+        const userPrompt = document.getElementById('prompt').value.trim();
+        const output = document.getElementById('responseOutput');
+        const exprInput = document.getElementById('inputExpr');
+
+        if (!userPrompt) {
+            output.textContent = 'Please enter a circuit description.';
+            return;
+        }
+
+        output.textContent = 'Analyzing logic description & generating expression...';
+
+        try {
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: userPrompt })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || `HTTP Error ${response.status}`);
+            }
+
+            const cleanExpr = data.expression ? data.expression.trim() : '';
+
+            if (!cleanExpr) {
+                throw new Error('Failed to parse expression from response.');
+            }
+
+            output.textContent = `Generated Expression: ${cleanExpr}`;
+
+            if (exprInput) {
+                exprInput.value = cleanExpr;
+            }
+
+            switchTabAndFocus('tab-expr');
+
+            const synthesizeBtn = document.getElementById('btnSynthesizeExpr');
+            if (synthesizeBtn) {
+                synthesizeBtn.click();
+            }
+
+        } catch (error) {
+            output.textContent = 'Error: ' + error.message;
+        }
+    });
+});
+
+    function processInput() {
+        const errorMsg = document.getElementById('errorMsg');
+        const outputs = document.getElementById('outputs');
+        errorMsg.innerText = '';
+        outputs.innerHTML = '';
+        outputs.style.display = 'none';
+
+        try {
+            const activeTab = document.querySelector('.tab.active').dataset.target;
+            let synthesisQueue = [];
+
+            if (activeTab === 'tab-expr') {
+                const expr = document.getElementById('inputExpr').value;
+                if(!expr.trim()) throw new Error("Expression cannot be empty.");
+                
+                let allVars = expr.toUpperCase().match(/[A-Z]/g) || [];
+                const vars = [...new Set(allVars)].sort();
+                if(vars.length > 6) throw new Error("Maximum 6 variables supported for logic synthesis.");
+                if(vars.length === 0) throw new Error("No valid variables found.");
+                
+                let tt = [];
+                const rows = Math.pow(2, vars.length);
+                for (let i = 0; i < rows; i++) {
+                    let inputVals = {};
+                    for (let j = 0; j < vars.length; j++) {
+                        inputVals[vars[j]] = (i & (1 << (vars.length - 1 - j))) ? 1 : 0;
+                    }
+                    tt.push(evaluateExpression(expr, inputVals));
+                }
+                synthesisQueue.push({ name: 'Boolean Function', vars: vars, tt: tt });
+            } 
+            else if (activeTab === 'tab-minmax') {
+                const varsStr = document.getElementById('inputVarsMin').value;
+                const vars = [...new Set(varsStr.toUpperCase().match(/[A-Z]/g) || [])].sort();
+                if(vars.length === 0 || vars.length > 6) throw new Error("Enter 1 to 6 valid variables.");
+                
+                const isMinterm = document.querySelector('input[name="termType"]:checked').value === 'minterms';
+                const maxTermIdx = Math.pow(2, vars.length) - 1;
+                const terms = document.getElementById('inputTerms').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                const dontCares = document.getElementById('inputDontCares').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                
+                if (terms.some(t => t < 0 || t > maxTermIdx)) throw new Error(`Terms must be integers between 0 and ${maxTermIdx}.`);
+
+                let tt = [];
+                const rows = Math.pow(2, vars.length);
+                for (let i = 0; i < rows; i++) {
+                    if (dontCares.includes(i)) tt.push('X');
+                    else if (terms.includes(i)) tt.push(isMinterm ? 1 : 0);
+                    else tt.push(isMinterm ? 0 : 1);
+                }
+                synthesisQueue.push({ name: 'Boolean Function', vars: vars, tt: tt });
+            }
+            else if (activeTab === 'tab-tt') {
+                const container = document.getElementById('ttInputContainer');
+                if(!container.dataset.vars) throw new Error("Generate Truth Table first.");
+                const vars = container.dataset.vars.split(',');
+                let tt = [];
+                const rows = Math.pow(2, vars.length);
+                for (let i = 0; i < rows; i++) {
+                    let val = document.getElementById(`tt-out-${i}`).value;
+                    tt.push(val === 'X' ? 'X' : parseInt(val));
+                }
+                synthesisQueue.push({ name: 'Boolean Function', vars: vars, tt: tt });
+            }
+            else if (activeTab === 'tab-arithmetic') {
+                const type = document.getElementById('selectArithmetic').value;
+                synthesisQueue = getArithmeticConfig(type);
+                outputs.appendChild(renderBlockDiagram(type));
+            }
+
+            synthesisQueue.forEach(job => {
+                const section = document.createElement('div');
+                section.className = 'multi-output-section';
+                section.innerHTML = `<h2 class="output-header">⚙️ Synthesizing: ${job.name} (${job.vars.length} Variables)</h2>`;
+                section.innerHTML += runSynthesis(job.vars, job.tt);
+                outputs.appendChild(section);
+            });
+
+            outputs.style.display = 'block';
+            outputs.scrollIntoView({ behavior: 'smooth' });
+
+        } catch (e) {
+            errorMsg.innerText = e.message;
+        }
+    }
+
+    function evaluateExpression(expr, inputs) {
+        let norm = expr.toUpperCase().replace(/\s+/g, '')
+                       .replace(/AND/g, '&').replace(/OR/g, '|').replace(/NOT/g, '~').replace(/XOR/g, '^')
+                       .replace(/\*/g, '&').replace(/\+/g, '|').replace(/!/g, '~');
+        
+        norm = norm.replace(/([A-Z\)])(?=[A-Z\(~])/g, '$1&');
+        
+        Object.keys(inputs).forEach(v => {
+            norm = norm.replace(new RegExp(v, 'g'), inputs[v]);
+        });
+        
+        let jsExpr = norm.replace(/&/g, '&&').replace(/\|/g, '||').replace(/~/g, '!');
+        jsExpr = jsExpr.replace(/([01!&|()]+)\^([01!&|()]+)/g, '!!($1) !== !!($2)'); 
+
+        try {
+            return (new Function(`return !!(${jsExpr});`))() ? 1 : 0;
+        } catch(e) {
+            throw new Error(`Invalid Boolean Expression context: ${expr}`);
+        }
+    }
+
+    function quineMcCluskey(targets, dontCares, numVars) {
+        if (targets.length === 0) return [];
+        let allTerms = [...new Set([...targets, ...dontCares])];
+        if (allTerms.length === Math.pow(2, numVars)) return ['1'];
+
+        let groups = Array.from({length: numVars + 1}, () => []);
+        allTerms.forEach(m => {
+            let bin = m.toString(2).padStart(numVars, '0');
+            let ones = bin.split('1').length - 1;
+            groups[ones].push({ bits: bin, minterms: [m], used: false });
+        });
+
+        let primeImplicants = [];
+        let changed = true;
+
+        while (changed) {
+            changed = false;
+            let nextGroups = Array.from({length: numVars + 1}, () => []);
+            let newTermsMap = new Set();
+
+            for (let i = 0; i < groups.length - 1; i++) {
+                for (let t1 of groups[i]) {
+                    for (let t2 of groups[i+1]) {
+                        let diffIdx = -1, diffs = 0;
+                        for (let k = 0; k < numVars; k++) {
+                            if (t1.bits[k] !== t2.bits[k]) { diffs++; diffIdx = k; }
+                        }
+                        if (diffs === 1) {
+                            t1.used = true;
+                            t2.used = true;
+                            let newBits = t1.bits.substring(0, diffIdx) + '-' + t1.bits.substring(diffIdx+1);
+                            if (!newTermsMap.has(newBits)) {
+                                newTermsMap.add(newBits);
+                                let combined = Array.from(new Set([...t1.minterms, ...t2.minterms])).sort((a,b)=>a-b);
+                                nextGroups[i].push({ bits: newBits, minterms: combined, used: false });
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            for (let g of groups) {
+                for (let t of g) {
+                    if (!t.used && !primeImplicants.some(pi => pi.bits === t.bits)) {
+                        primeImplicants.push(t);
+                    }
+                }
+            }
+            groups = nextGroups;
+        }
+
+        let uncovered = new Set(targets);
+        let essential = [];
+
+        targets.forEach(m => {
+            let covers = primeImplicants.filter(pi => pi.minterms.includes(m));
+            if (covers.length === 1) {
+                let epi = covers[0];
+                if (!essential.includes(epi)) {
+                    essential.push(epi);
+                    epi.minterms.forEach(cm => uncovered.delete(cm));
+                }
+            }
+        });
+
+        let solution = [...essential];
+        while (uncovered.size > 0) {
+            let bestPI = null, maxCover = 0;
+            primeImplicants.forEach(pi => {
+                if (solution.includes(pi)) return;
+                let coverCount = pi.minterms.filter(m => uncovered.has(m)).length;
+                if (coverCount > maxCover) { maxCover = coverCount; bestPI = pi; }
+            });
+            if(!bestPI) break;
+            solution.push(bestPI);
+            bestPI.minterms.forEach(m => uncovered.delete(m));
+        }
+        
+        return solution.map(pi => pi.bits);
+    }
+
+    function renderKMapSVG(vars, minterms1, dontCares, primeImplicantsBits, sopTerms) {
+        const numVars = vars.length;
+
+        const groupColors = [
+            '#00f3ff', // Electric Cyan
+            '#f43f5e', // Neon Rose
+            '#10b981', // Vivid Emerald
+            '#f59e0b', // Amber
+            '#a855f7', // Purple
+            '#ec4899', // Pink
+            '#3b82f6', // Electric Blue
+            '#84cc16'  // Lime
+        ];
+
+        const mintermValue = {};
+        for (let m = 0; m < Math.pow(2, numVars); m++) {
+            if (dontCares.includes(m)) mintermValue[m] = 'X';
+            else if (minterms1.includes(m)) mintermValue[m] = '1';
+            else mintermValue[m] = '0';
+        }
+
+        let numSubRows = 1, numSubCols = 1;
+        let numRows = 2, numCols = 2;
+        let rowVars = [], colVars = [], mapVars = [];
+        let rowGray = [0, 1], colGray = [0, 1];
+        let rowGrayLabels = ['0', '1'], colGrayLabels = ['0', '1'];
+        let subMapLabels = [''];
+
+        if (numVars === 1) {
+            rowVars = [vars[0]]; colVars = [];
+            numRows = 2; numCols = 1;
+            colGray = [0]; colGrayLabels = [''];
+        } else if (numVars === 2) {
+            rowVars = [vars[0]]; colVars = [vars[1]];
+            numRows = 2; numCols = 2;
+        } else if (numVars === 3) {
+            rowVars = [vars[0]]; colVars = [vars[1], vars[2]];
+            numRows = 2; numCols = 4;
+            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
+        } else if (numVars === 4) {
+            rowVars = [vars[0], vars[1]]; colVars = [vars[2], vars[3]];
+            numRows = 4; numCols = 4;
+            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
+            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
+        } else if (numVars === 5) {
+            mapVars = [vars[0]];
+            rowVars = [vars[1], vars[2]]; colVars = [vars[3], vars[4]];
+            numSubRows = 1; numSubCols = 2;
+            numRows = 4; numCols = 4;
+            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
+            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
+            subMapLabels = [`${vars[0]} = 0`, `${vars[0]} = 1`];
+        } else if (numVars === 6) {
+            mapVars = [vars[0], vars[1]];
+            rowVars = [vars[2], vars[3]]; colVars = [vars[4], vars[5]];
+            numSubRows = 2; numSubCols = 2;
+            numRows = 4; numCols = 4;
+            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
+            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
+            subMapLabels = [
+                `${vars[0]}${vars[1]} = 00`, `${vars[0]}${vars[1]} = 01`,
+                `${vars[0]}${vars[1]} = 10`, `${vars[0]}${vars[1]} = 11`
+            ];
+        }
+
+        function getMinterm(sR, sC, r, c) {
+            let subVal = 0;
+            if (numVars === 5) subVal = sC;
+            else if (numVars === 6) {
+                const mapGray = [[0, 1], [2, 3]];
+                subVal = mapGray[sR][sC];
+            }
+
+            if (numVars === 1) return r;
+            if (numVars === 2) return (r << 1) | c;
+            if (numVars === 3) return (r << 2) | colGray[c];
+            if (numVars === 4) return (rowGray[r] << 2) | colGray[c];
+            if (numVars === 5) return (subVal << 4) | (rowGray[r] << 2) | colGray[c];
+            if (numVars === 6) return (subVal << 4) | (rowGray[r] << 2) | colGray[c];
+        }
+
+        const cellW = 68, cellH = 58;
+        const headerW = 75, headerH = 50;
+        const subMapTitleH = (numVars >= 5) ? 35 : 0;
+        const gapX = 40, gapY = 40;
+
+        const subMapWidth = headerW + numCols * cellW;
+        const subMapHeight = headerH + numRows * cellH;
+
+        const svgW = numSubCols * subMapWidth + (numSubCols - 1) * gapX + 40;
+        const svgH = numSubRows * (subMapHeight + subMapTitleH) + (numSubRows - 1) * gapY + 40;
+
+        let svg = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="background:#040711; border-radius:12px; font-family:'Fira Code', monospace; user-select:none; box-shadow: 0 0 20px rgba(0,0,0,0.8);">`;
+
+        for (let sR = 0; sR < numSubRows; sR++) {
+            for (let sC = 0; sC < numSubCols; sC++) {
+                const subIdx = sR * numSubCols + sC;
+                const offsetX = 20 + sC * (subMapWidth + gapX);
+                const offsetY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH;
+
+                if (numVars >= 5) {
+                    svg += `<text x="${offsetX + subMapWidth / 2}" y="${offsetY - 12}" font-size="15" font-weight="bold" fill="#00f3ff" text-anchor="middle">${subMapLabels[subIdx]}</text>`;
+                }
+
+                const startX = offsetX + headerW;
+                const startY = offsetY + headerH;
+
+                const rowLabelStr = rowVars.join('');
+                const colLabelStr = colVars.join('');
+                svg += `<line x1="${offsetX + 12}" y1="${offsetY + 12}" x2="${startX}" y2="${startY}" stroke="#475569" stroke-width="1.5" />`;
+                svg += `<text x="${startX - 8}" y="${offsetY + 24}" font-size="12" fill="#cbd5e1" text-anchor="end" font-weight="700">${rowLabelStr}</text>`;
+                if (colLabelStr) {
+                    svg += `<text x="${offsetX + 20}" y="${startY - 8}" font-size="12" fill="#00f3ff" text-anchor="start" font-weight="700">${colLabelStr}</text>`;
+                }
+
+                for (let c = 0; c < numCols; c++) {
+                    const cx = startX + c * cellW + cellW / 2;
+                    svg += `<text x="${cx}" y="${startY - 14}" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${colGrayLabels[c]}</text>`;
+                }
+
+                for (let r = 0; r < numRows; r++) {
+                    const cy = startY + r * cellH + cellH / 2 + 5;
+                    svg += `<text x="${startX - 20}" y="${cy}" font-size="14" font-weight="bold" fill="#cbd5e1" text-anchor="middle">${rowGrayLabels[r]}</text>`;
+                }
+
+                svg += `<rect x="${startX}" y="${startY}" width="${numCols * cellW}" height="${numRows * cellH}" fill="none" stroke="#334155" stroke-width="2.5" rx="4" />`;
+                for (let c = 1; c < numCols; c++) {
+                    const x = startX + c * cellW;
+                    svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + numRows * cellH}" stroke="#334155" stroke-width="1.5" />`;
+                }
+                for (let r = 1; r < numRows; r++) {
+                    const y = startY + r * cellH;
+                    svg += `<line x1="${startX}" y1="${y}" x2="${startX + numCols * cellW}" y2="${y}" stroke="#334155" stroke-width="1.5" />`;
+                }
+
+                for (let r = 0; r < numRows; r++) {
+                    for (let c = 0; c < numCols; c++) {
+                        const m = getMinterm(sR, sC, r, c);
+                        const val = mintermValue[m];
+                        const x = startX + c * cellW;
+                        const y = startY + r * cellH;
+
+                        svg += `<text x="${x + cellW - 5}" y="${y + 13}" font-size="9" fill="#64748b" text-anchor="end">${m}</text>`;
+
+                        let valColor = '#64748b';
+                        if (val === '1') valColor = '#10b981';
+                        else if (val === 'X') valColor = '#f59e0b';
+
+                        svg += `<text x="${x + cellW/2}" y="${y + cellH/2 + 7}" font-size="20" font-weight="bold" fill="${valColor}" text-anchor="middle">${val}</text>`;
+                    }
+                }
+            }
+        }
+
+        primeImplicantsBits.forEach((bits, idx) => {
+            const col = groupColors[idx % groupColors.length];
+            const inset = 5 + (idx % 3) * 3;
+
+            for (let sR = 0; sR < numSubRows; sR++) {
+                for (let sC = 0; sC < numSubCols; sC++) {
+                    const offsetX = 20 + sC * (subMapWidth + gapX);
+                    const offsetY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH;
+                    const startX = offsetX + headerW;
+                    const startY = offsetY + headerH;
+
+                    const coveredRows = new Set();
+                    const coveredCols = new Set();
+                    let cellCount = 0;
+
+                    for (let r = 0; r < numRows; r++) {
+                        for (let c = 0; c < numCols; c++) {
+                            const m = getMinterm(sR, sC, r, c);
+                            const bin = m.toString(2).padStart(numVars, '0');
+                            let match = true;
+                            for (let k = 0; k < numVars; k++) {
+                                if (bits[k] !== '-' && bits[k] !== bin[k]) {
+                                    match = false; break;
+                                }
+                            }
+                            if (match) {
+                                coveredRows.add(r);
+                                coveredCols.add(c);
+                                cellCount++;
+                            }
+                        }
+                    }
+
+                    if (cellCount === 0) continue;
+
+                    const rows = Array.from(coveredRows).sort((a,b)=>a-b);
+                    const cols = Array.from(coveredCols).sort((a,b)=>a-b);
+
+                    const isRowWrapped = (rows.length === 2 && rows[0] === 0 && rows[1] === numRows - 1);
+                    const isColWrapped = (cols.length === 2 && cols[0] === 0 && cols[1] === numCols - 1);
+
+                    if (numRows === 4 && numCols === 4 && isRowWrapped && isColWrapped && cellCount === 4) {
+                        const corners = [
+                            { r: 0, c: 0, path: `M ${startX + cellW - inset},${startY + inset} L ${startX + inset},${startY + cellH/2} L ${startX + cellW/2},${startY + cellH - inset}` },
+                            { r: 0, c: 3, path: `M ${startX + 3*cellW + inset},${startY + inset} L ${startX + 4*cellW - inset},${startY + cellH/2} L ${startX + 3*cellW + cellW/2},${startY + cellH - inset}` },
+                            { r: 3, c: 0, path: `M ${startX + cellW - inset},${startY + 3*cellH + inset} L ${startX + inset},${startY + 3*cellH + cellH/2} L ${startX + cellW/2},${startY + 4*cellH - inset}` },
+                            { r: 3, c: 3, path: `M ${startX + 3*cellW + inset},${startY + 3*cellH + inset} L ${startX + 4*cellW - inset},${startY + 3*cellH + cellH/2} L ${startX + 3*cellW + cellW/2},${startY + 4*cellH - inset}` }
+                        ];
+                        corners.forEach(cn => {
+                            svg += `<path d="${cn.path}" fill="none" stroke="${col}" stroke-width="2.5" />`;
+                            svg += `<rect x="${startX + cn.c*cellW + inset}" y="${startY + cn.r*cellH + inset}" width="${cellW - 2*inset}" height="${cellH - 2*inset}" fill="${col}" fill-opacity="0.12" rx="4" />`;
+                        });
+                        continue;
+                    }
+
+                    if (isRowWrapped) {
+                        const minC = Math.min(...cols); const maxC = Math.max(...cols);
+                        const gx1 = startX + minC * cellW + inset;
+                        const gx2 = startX + (maxC + 1) * cellW - inset;
+
+                        const gyTop1 = startY + inset; const gyTop2 = startY + cellH - inset;
+                        svg += `<path d="M ${gx1},${gyTop2} V ${gyTop1} H ${gx2} V ${gyTop2}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+
+                        const gyBot1 = startY + (numRows - 1) * cellH + inset; const gyBot2 = startY + numRows * cellH - inset;
+                        svg += `<path d="M ${gx1},${gyBot1} V ${gyBot2} H ${gx2} V ${gyBot1}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        continue;
+                    }
+
+                    if (isColWrapped) {
+                        const minR = Math.min(...rows); const maxR = Math.max(...rows);
+                        const gy1 = startY + minR * cellH + inset;
+                        const gy2 = startY + (maxR + 1) * cellH - inset;
+
+                        const gxLeft1 = startX + inset; const gxLeft2 = startX + cellW - inset;
+                        svg += `<path d="M ${gxLeft2},${gy1} H ${gxLeft1} V ${gy2} H ${gxLeft2}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+
+                        const gxRight1 = startX + (numCols - 1) * cellW + inset; const gxRight2 = startX + numCols * cellW - inset;
+                        svg += `<path d="M ${gxRight1},${gy1} H ${gxRight2} V ${gy2} H ${gxRight1}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        continue;
+                    }
+
+                    const minR = Math.min(...rows); const maxR = Math.max(...rows);
+                    const minC = Math.min(...cols); const maxC = Math.max(...cols);
+
+                    const gx = startX + minC * cellW + inset;
+                    const gy = startY + minR * cellH + inset;
+                    const gw = (maxC - minC + 1) * cellW - 2 * inset;
+                    const gh = (maxR - minR + 1) * cellH - 2 * inset;
+
+                    svg += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="8" fill="${col}" fill-opacity="0.18" stroke="${col}" stroke-width="2.5" />`;
+                }
+            }
+        });
+
+        svg += `</svg>`;
+
+        let legendHtml = `<div style="margin-top:1.25rem; display:flex; flex-wrap:wrap; justify-content:center; gap:0.75rem;">`;
+        primeImplicantsBits.forEach((bits, idx) => {
+            const col = groupColors[idx % groupColors.length];
+            const term = sopTerms[idx] ? sopTerms[idx].join('') : bits;
+            legendHtml += `<div style="display:flex; align-items:center; gap:0.5rem; background:rgba(15,23,42,0.85); padding:0.4rem 0.85rem; border-radius:8px; border:1px solid ${col}88; box-shadow: 0 0 10px ${col}33;">
+                <span style="width:14px; height:14px; border-radius:4px; background:${col}; display:inline-block; box-shadow: 0 0 8px ${col};"></span>
+                <span style="font-family:'Fira Code', monospace; font-size:0.9rem; font-weight:600; color:#f8fafc;">${term} <span style="color:#94a3b8; font-size:0.8rem;">(${bits})</span></span>
+            </div>`;
+        });
+        legendHtml += `</div>`;
+
+        return `<div style="display:flex; flex-direction:column; align-items:center; overflow-x:auto; padding:1rem 0;">${svg}${legendHtml}</div>`;
+    }
+
+    function runSynthesis(vars, tt) {
+        const minterms1 = tt.map((v, i) => v === 1 ? i : -1).filter(i => i !== -1);
+        const minterms0 = tt.map((v, i) => v === 0 ? i : -1).filter(i => i !== -1);
+        const dontCares = tt.map((v, i) => v === 'X' ? i : -1).filter(i => i !== -1);
+        
+        const qmSOP = quineMcCluskey(minterms1, dontCares, vars.length);
+        const qmPOS = quineMcCluskey(minterms0, dontCares, vars.length); 
+        
+        const sopTerms = qmSOP.map(bits => bitsToLiterals(bits, vars, true));
+        const posTerms = qmPOS.map(bits => bitsToLiterals(bits, vars, false));
+
+        const sopEq = formatEquation(sopTerms, false);
+        const posEq = formatEquation(posTerms, true);
+        
+        const kmapHtml = renderKMapSVG(vars, minterms1, dontCares, qmSOP, sopTerms);
+        const ttHtml = generateTruthTableHTML(vars, tt);
+
+        const astStandard = buildStandardAST(sopTerms);
+        const astStandardPOS = buildPOSStandardAST(posTerms);
+        
+        const astNAND = convertToNAND(astStandard);
+        const astNOR = convertToNOR(astStandardPOS);
+
+        const verified = verifyASTs(vars, tt, astStandard, astNAND, astNOR);
+        const veriClass = verified ? 'success' : 'fail';
+        const veriText = verified ? '✓ Verification Passed: Minimized K-Map terms, NAND-only, and NOR-only circuits match target specs.' 
+                                  : '✗ Verification Failed: Circuit outputs mismatch.';
+
+        let html = `
+            <div class="verification ${veriClass}">${veriText}</div>
+            
+            <div class="kmap-wrapper">
+                <h3>📊 Karnaugh Map (K-Map) Solver (${vars.length} Variables)</h3>
+                ${kmapHtml}
+            </div>
+
+            <div class="grid-2">
+                <div class="result-box">
+                    <h3>Minimized Boolean Expressions</h3>
+                    <p><strong>SOP (Sum of Products):</strong> <br><span class="code-font">${sopEq}</span></p>
+                    <p style="margin-top:0.75rem;"><strong>POS (Product of Sums):</strong> <br><span class="code-font">${posEq}</span></p>
+                </div>
+                <div class="result-box">
+                    <h3>Truth Table</h3>
+                    ${ttHtml}
+                </div>
+            </div>
+            
+            <h3>Synthesized Logic Circuits</h3>
+            <div class="circuit-box">
+                <h4>Standard Circuit (AND, OR, NOT)</h4>
+                <div class="svg-container">${renderAST(astStandard)}</div>
+            </div>
+            <div class="circuit-box">
+                <h4>Universal NAND-Only Circuit</h4>
+                <div class="svg-container">${renderAST(astNAND)}</div>
+            </div>
+            <div class="circuit-box">
+                <h4>Universal NOR-Only Circuit</h4>
+                <div class="svg-container">${renderAST(astNOR)}</div>
+            </div>
+        `;
+        return html;
+    }
+
+    function bitsToLiterals(bits, vars, isSOP) {
+        if (bits === '1') return ['1'];
+        let term = [];
+        for (let i = 0; i < bits.length; i++) {
+            if (bits[i] === '1') term.push(isSOP ? vars[i] : `~${vars[i]}`);
+            else if (bits[i] === '0') term.push(isSOP ? `~${vars[i]}` : vars[i]);
+        }
+        return term;
+    }
+
+    function formatEquation(terms, isPOS) {
+        if (terms.length === 0) return isPOS ? "1" : "0";
+        if (terms[0][0] === '1') return isPOS ? "0" : "1";
+        
+        let outerJoin = isPOS ? '' : ' + ';
+        let innerJoin = isPOS ? ' + ' : '';
+        let strings = terms.map(t => {
+            let inner = t.join(innerJoin);
+            return isPOS ? `(${inner})` : inner;
+        });
+        return strings.join(outerJoin);
+    }
+
+    function generateTruthTableHTML(vars, tt) {
+        let html = '<div class="tt-container"><table><thead><tr>';
+        vars.forEach(v => html += `<th>${v}</th>`);
+        html += '<th>Output</th></tr></thead><tbody>';
+        
+        for(let i=0; i<tt.length; i++) {
+            html += '<tr>';
+            for(let j=0; j<vars.length; j++) {
+                let val = (i & (1 << (vars.length - 1 - j))) ? 1 : 0;
+                html += `<td>${val}</td>`;
+            }
+            let ttClass = tt[i] === 'X' ? 'tt-x' : (tt[i] ? 'tt-one' : 'tt-zero');
+            html += `<td class="${ttClass}">${tt[i]}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function buildStandardAST(sopTerms) {
+        if (sopTerms.length === 0) return { type: 'CONST', value: 0 };
+        if (sopTerms[0][0] === '1') return { type: 'CONST', value: 1 };
+
+        let orNodes = sopTerms.map(term => {
+            let andNodes = term.map(lit => {
+                if (lit.startsWith('~')) return { type: 'NOT', children: [{ type: 'VAR', value: lit.substring(1) }] };
+                return { type: 'VAR', value: lit };
+            });
+            if (andNodes.length === 0) return { type: 'CONST', value: 1 };
+            return andNodes.reduce((acc, curr) => ({ type: 'AND', children: [acc, curr] }));
+        });
+        
+        if (orNodes.length === 0) return { type: 'CONST', value: 0 };
+        return orNodes.reduce((acc, curr) => ({ type: 'OR', children: [acc, curr] }));
+    }
+
+    function buildPOSStandardAST(posTerms) {
+        if (posTerms.length === 0) return { type: 'CONST', value: 1 };
+        if (posTerms[0][0] === '1') return { type: 'CONST', value: 0 };
+
+        let andNodes = posTerms.map(term => {
+            let orNodes = term.map(lit => {
+                if (lit.startsWith('~')) return { type: 'NOT', children: [{ type: 'VAR', value: lit.substring(1) }] };
+                return { type: 'VAR', value: lit };
+            });
+            if (orNodes.length === 0) return { type: 'CONST', value: 0 };
+            return orNodes.reduce((acc, curr) => ({ type: 'OR', children: [acc, curr] }));
+        });
+        
+        if (andNodes.length === 0) return { type: 'CONST', value: 1 };
+        return andNodes.reduce((acc, curr) => ({ type: 'AND', children: [acc, curr] }));
+    }
+
+    function astEquals(n1, n2) {
+        if (n1 === n2) return true;
+        if (!n1 || !n2 || n1.type !== n2.type || n1.value !== n2.value) return false;
+        let len1 = n1.children ? n1.children.length : 0;
+        let len2 = n2.children ? n2.children.length : 0;
+        if (len1 !== len2) return false;
+        if (len1 === 0) return true;
+        for (let i = 0; i < len1; i++) if (!astEquals(n1.children[i], n2.children[i])) return false;
+        return true;
+    }
+
+    function NOT_NAND(node) {
+        if (node.type === 'NAND' && astEquals(node.children[0], node.children[1])) return node.children[0];
+        return { type: 'NAND', children: [node, node] };
+    }
+    function convertToNAND(node) {
+        if (node.type === 'VAR' || node.type === 'CONST') return node;
+        if (node.type === 'NOT') return NOT_NAND(convertToNAND(node.children[0]));
+        if (node.type === 'AND') return NOT_NAND({ type: 'NAND', children: [convertToNAND(node.children[0]), convertToNAND(node.children[1])] });
+        if (node.type === 'OR') return { type: 'NAND', children: [NOT_NAND(convertToNAND(node.children[0])), NOT_NAND(convertToNAND(node.children[1]))] };
+    }
+
+    function NOT_NOR(node) {
+        if (node.type === 'NOR' && astEquals(node.children[0], node.children[1])) return node.children[0];
+        return { type: 'NOR', children: [node, node] };
+    }
+    function convertToNOR(node) {
+        if (node.type === 'VAR' || node.type === 'CONST') return node;
+        if (node.type === 'NOT') return NOT_NOR(convertToNOR(node.children[0]));
+        if (node.type === 'AND') return { type: 'NOR', children: [NOT_NOR(convertToNOR(node.children[0])), NOT_NOR(convertToNOR(node.children[1]))] };
+        if (node.type === 'OR') return NOT_NOR({ type: 'NOR', children: [convertToNOR(node.children[0]), convertToNOR(node.children[1])] });
+    }
+
+    function evaluateAST(node, inputs) {
+        if (!node) return 0;
+        if (node.type === 'CONST') return node.value;
+        if (node.type === 'VAR') return inputs[node.value];
+        if (node.type === 'NOT') return !evaluateAST(node.children[0], inputs);
+        if (node.type === 'AND') return node.children.reduce((acc, c) => acc && evaluateAST(c, inputs), true);
+        if (node.type === 'OR') return node.children.reduce((acc, c) => acc || evaluateAST(c, inputs), false);
+        if (node.type === 'NAND') return !(node.children.reduce((acc, c) => acc && evaluateAST(c, inputs), true));
+        if (node.type === 'NOR') return !(node.children.reduce((acc, c) => acc || evaluateAST(c, inputs), false));
+    }
+
+    function verifyASTs(vars, ttOriginal, astSOP, astNAND, astNOR) {
+        for(let i=0; i<ttOriginal.length; i++) {
+            if (ttOriginal[i] === 'X') continue;
+            let inputVals = {};
+            for(let j=0; j<vars.length; j++) {
+                inputVals[vars[j]] = (i & (1 << (vars.length - 1 - j))) ? 1 : 0;
+            }
+            let resSOP = evaluateAST(astSOP, inputVals) ? 1 : 0;
+            let resNAND = evaluateAST(astNAND, inputVals) ? 1 : 0;
+            let resNOR = evaluateAST(astNOR, inputVals) ? 1 : 0;
+            if(resSOP !== ttOriginal[i] || resNAND !== ttOriginal[i] || resNOR !== ttOriginal[i]) return false;
+        }
+        return true;
+    }
+
+    function cloneTree(node) {
+        if (!node) return null;
+        let clone = { type: node.type, value: node.value };
+        if (node.children) clone.children = node.children.map(cloneTree);
+        return clone;
+    }
+
+    function layoutNode(node) {
+        if (node.type === 'VAR' || node.type === 'CONST') {
+            node.w = 50; node.h = 40; return {w: 50, h: 40};
+        }
+        let totalH = 0; let maxW = 0;
+        node.children.forEach((c) => {
+            let dim = layoutNode(c);
+            totalH += dim.h;
+            maxW = Math.max(maxW, dim.w);
+        });
+        node.h = Math.max(totalH + (node.children.length - 1) * 25, 60);
+        node.w = maxW + 110; 
+        return {w: node.w, h: node.h};
+    }
+
+    function positionNode(node, x, y) {
+        node.x = x; node.y = y;
+        if (!node.children || node.children.length === 0) return;
+        
+        let totalH = node.children.reduce((sum, c) => sum + c.h, 0);
+        let startY = y - (totalH + (node.children.length - 1) * 25) / 2;
+        
+        node.children.forEach(c => {
+            let childY = startY + c.h / 2;
+            positionNode(c, x - 110, childY); 
+            startY += c.h + 25;
+        });
+    }
+
+    function renderAST(originalNode) {
+        let node = cloneTree(originalNode);
+        if(node.type === 'CONST') return `<svg width="240" height="60"><text x="120" y="35" text-anchor="middle" font-family="sans-serif" fill="#cbd5e1">Output is constant ${node.value}</text></svg>`;
+        
+        layoutNode(node);
+        positionNode(node, 0, 0); 
+
+        let bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+        function calcBounds(n) {
+            bounds.minX = Math.min(bounds.minX, n.x - 40);
+            bounds.maxX = Math.max(bounds.maxX, n.x + 60);
+            bounds.minY = Math.min(bounds.minY, n.y - 40);
+            bounds.maxY = Math.max(bounds.maxY, n.y + 40);
+            if(n.children) n.children.forEach(calcBounds);
+        }
+        calcBounds(node);
+
+        let padX = 40; let padY = 40;
+        let shiftX = -bounds.minX + padX;
+        let shiftY = -bounds.minY + padY;
+        
+        function applyShift(n) {
+            n.x += shiftX; n.y += shiftY;
+            if(n.children) n.children.forEach(applyShift);
+        }
+        applyShift(node);
+
+        let svgWidth = (bounds.maxX - bounds.minX) + (padX * 2); 
+        let svgHeight = (bounds.maxY - bounds.minY) + (padY * 2);
+
+        let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="user-select:none;">`;
+        svg += drawConnections(node);
+        svg += drawNodes(node);
+        
+        let outX = node.type.includes('N') ? node.x + 28 : (node.type==='VAR' ? node.x+20 : node.x+20);
+        if(node.type === 'NOT') outX = node.x + 13;
+        svg += `<path d="M ${outX},${node.y} L ${outX + 30},${node.y}" stroke="#6366f1" stroke-width="2.5" fill="none"/>`;
+        svg += `<text x="${outX + 40}" y="${node.y + 5}" font-family="'Plus Jakarta Sans', sans-serif" font-weight="bold" fill="#00f3ff">Out</text>`;
+        svg += `</svg>`;
+        return svg;
+    }
+
+    function drawConnections(node) {
+        if (!node.children) return "";
+        let svg = "";
+        node.children.forEach((c, idx) => {
+            let outX = c.type.includes('N') ? c.x+28 : (c.type==='VAR'||c.type==='CONST' ? c.x+20 : c.x+20);
+            if(c.type === 'NOT') outX = c.x + 13;
+            
+            let inX = (node.type === 'OR' || node.type === 'NOR') ? node.x - 15 : node.x - 20;
+            let spread = Math.min(24, (node.children.length - 1) * 12);
+            let step = node.children.length > 1 ? spread / (node.children.length - 1) : 0;
+            let inY = (node.y - spread / 2) + (idx * step);
+
+            let midX = outX + (inX - outX) / 2;
+            svg += `<path d="M ${outX},${c.y} H ${midX} V ${inY} H ${inX}" fill="none" stroke="#475569" stroke-width="2"/>`;
+            svg += drawConnections(c);
+        });
+        return svg;
+    }
+
+    function drawNodes(node) {
+        let svg = "";
+        if (node.children) node.children.forEach(c => { svg += drawNodes(c); });
+        let nx = node.x, ny = node.y;
+        
+        if (node.type === 'VAR' || node.type === 'CONST') {
+            svg += `<rect x="${nx-18}" y="${ny-15}" width="36" height="30" rx="6" fill="#1e293b" stroke="#00f3ff" stroke-width="1.5"/>`;
+            svg += `<text x="${nx}" y="${ny+5}" font-family="'Fira Code', monospace" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${node.value}</text>`;
+        } else if (node.type === 'AND') {
+            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<text x="${nx-5}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">AND</text>`;
+        } else if (node.type === 'OR') {
+            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<text x="${nx}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">OR</text>`;
+        } else if (node.type === 'NOT') {
+            svg += `<path d="M ${nx-20},${ny-15} L ${nx+5},${ny} L ${nx-20},${ny+15} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+9}" cy="${ny}" r="4" fill="#0b0f19" stroke="#818cf8" stroke-width="2"/>`;
+        } else if (node.type === 'NAND') {
+            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="#1e293b" stroke="#00f3ff" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="#0b0f19" stroke="#00f3ff" stroke-width="2"/>`;
+            svg += `<text x="${nx-5}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">NAND</text>`;
+        } else if (node.type === 'NOR') {
+            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="#1e293b" stroke="#00f3ff" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="#0b0f19" stroke="#00f3ff" stroke-width="2"/>`;
+            svg += `<text x="${nx}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">NOR</text>`;
+        }
+        return svg;
+    }
+
+    function getArithmeticConfig(type) {
+        if (type === 'ha') return [
+            { name: 'Half Adder (Sum)', vars: ['A','B'], tt: [0,1,1,0] },
+            { name: 'Half Adder (Carry)', vars: ['A','B'], tt: [0,0,0,1] }
+        ];
+        if (type === 'fa') return [
+            { name: 'Full Adder (Sum)', vars: ['A','B','Cin'], tt: [0,1,1,0,1,0,0,1] },
+            { name: 'Full Adder (Cout)', vars: ['A','B','Cin'], tt: [0,0,0,1,0,1,1,1] }
+        ];
+        if (type === 'hs') return [
+            { name: 'Half Subtractor (Diff)', vars: ['A','B'], tt: [0,1,1,0] },
+            { name: 'Half Subtractor (Bout)', vars: ['A','B'], tt: [0,1,0,0] }
+        ];
+        if (type === 'fs') return [
+            { name: 'Full Subtractor (Diff)', vars: ['A','B','Bin'], tt: [0,1,1,0,1,0,0,1] },
+            { name: 'Full Subtractor (Bout)', vars: ['A','B','Bin'], tt: [0,1,1,1,0,0,0,1] }
+        ];
+        if (type === 'mult2') return [
+            { name: '2x2 Multiplier (P3 / MSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1] },
+            { name: '2x2 Multiplier (P2)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,1,0] },
+            { name: '2x2 Multiplier (P1)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,1,1, 0,0,1,1, 0,1,0,0] },
+            { name: '2x2 Multiplier (P0 / LSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,1,0,1, 0,0,0,0, 0,1,0,1] }
+        ];
+    }
+
+    function renderBlockDiagram(type) {
+        const div = document.createElement('div');
+        div.className = 'block-diagram';
+        let title = "", inputs = "", outputs = "";
+        
+        if(type === 'ha') { title = "Half Adder"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div>"; outputs = "<div class='block-pin out'>Sum</div><div class='block-pin out'>Carry</div>"; }
+        else if(type === 'fa') { title = "Full Adder"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div><div class='block-pin in'>Cin</div>"; outputs = "<div class='block-pin out'>Sum</div><div class='block-pin out'>Cout</div>"; }
+        else if(type === 'hs') { title = "Half Subtractor"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div>"; outputs = "<div class='block-pin out'>Diff</div><div class='block-pin out'>Bout</div>"; }
+        else if(type === 'fs') { title = "Full Subtractor"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div><div class='block-pin in'>Bin</div>"; outputs = "<div class='block-pin out'>Diff</div><div class='block-pin out'>Bout</div>"; }
+        else if(type === 'mult2') { title = "2x2 Multiplier"; inputs = "<div class='block-pin in'>A1, A0</div><div class='block-pin in'>B1, B0</div>"; outputs = "<div class='block-pin out'>P3 (MSB)</div><div class='block-pin out'>P2</div><div class='block-pin out'>P1</div><div class='block-pin out'>P0</div>"; }
+
+        div.innerHTML = `<div class="block-box">
+            <div class="block-inputs">${inputs}</div>
+            ${title}
+            <div class="block-outputs">${outputs}</div>
+        </div>`;
+        return div;
+    }
+    </script>
+</body>
+</html>
