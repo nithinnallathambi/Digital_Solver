@@ -273,7 +273,7 @@
             letter-spacing: 0.01em;
         }
 
-        input[type="text"], input[type="password"], textarea, .styled-select {
+        input[type="text"], input[type="password"], input[type="number"], textarea, .styled-select {
             width: 100%;
             padding: 0.9rem 1.15rem;
             background: var(--bg-input);
@@ -286,6 +286,12 @@
             transition: all 0.25s ease;
             box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
         }
+        
+        .calc-input {
+            padding: 0.6rem 0.85rem !important;
+            margin-bottom: 0 !important;
+            border-radius: var(--radius-sm) !important;
+        }
 
         textarea {
             height: 100px;
@@ -293,7 +299,7 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        input[type="text"]:focus, input[type="password"]:focus, textarea:focus, .styled-select:focus {
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus, .styled-select:focus {
             outline: none;
             border-color: var(--accent-cyan);
             background: rgba(7, 12, 24, 0.95);
@@ -498,7 +504,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1.5rem;
-            margin-bottom: 2rem;
         }
 
         @media (max-width: 850px) {
@@ -513,6 +518,7 @@
             border-radius: var(--radius-md);
             border: 1px solid var(--border-color);
             box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+            margin-bottom: 2rem;
         }
 
         .verification {
@@ -766,6 +772,9 @@
 
                 <label style="margin-top: 1.25rem;">Response Output</label>
                 <div id="responseOutput" class="code-font" style="min-height: 80px; width: 100%; white-space: pre-wrap; margin-top: 0.5rem; display: block; color: #f8fafc;">Response will appear here...</div>
+                
+                <!-- Variable Mapping UI Block -->
+                <div id="variableMapping" class="code-font" style="margin-top: 0.5rem; color: var(--accent-green); display: none;"></div>
             </div>
         </section>
 
@@ -830,8 +839,77 @@
                     <option value="hs">Half Subtractor</option>
                     <option value="fs">Full Subtractor</option>
                     <option value="mult2">2x2 Multiplier</option>
+                    <option value="mux21">2x1 Multiplexer</option>
+                    <option value="mux41">4x1 Multiplexer</option>
+                    <option value="mult3">3x3 Multiplier</option>
                 </select>
-                <button id="btnSynthesizeArithmetic" class="primary-btn synthesize-btn" style="margin-top: 1rem;">Generate Arithmetic Circuit ⚡</button>
+
+                <!-- NEW: Live Interactive Google-Translate Style Calculator -->
+                <div id="interactiveCalc" style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: var(--radius-md);">
+                    <h3 style="color: var(--accent-green); margin-bottom: 1rem;">🧮 Live Auto-Translator & Calculator</h3>
+                    
+                    <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1.5rem;">
+                        <!-- Input 1 -->
+                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
+                            <label id="lbl-calc-in1" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input A</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <input type="number" id="calc-in1-dec" class="calc-input" value="0">
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <input type="text" id="calc-in1-bin" class="calc-input" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Input 2 -->
+                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
+                            <label id="lbl-calc-in2" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input B</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <input type="number" id="calc-in2-dec" class="calc-input" value="0">
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <input type="text" id="calc-in2-bin" class="calc-input" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Optional Input 3 (Cin / S) -->
+                        <div id="calc-in3-box" style="display: none; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; grid-column: 1 / -1;">
+                            <label id="lbl-calc-in3" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input C (Cin)</label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <input type="number" id="calc-in3-dec" class="calc-input" value="0">
+                                </div>
+                                <div style="flex: 1;">
+                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <input type="text" id="calc-in3-bin" class="calc-input" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(16, 185, 129, 0.15); padding: 1rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.5);">
+                        <label style="color: var(--accent-cyan); font-size: 1.1rem; margin-bottom: 0.75rem;">Combined Output Result</label>
+                        <div style="display: flex; gap: 1.5rem;">
+                            <div style="flex: 1;">
+                                <span style="font-size: 0.75rem; color: #94a3b8;">Decimal (Math Value)</span>
+                                <input type="text" id="calc-out-dec" readonly style="background: rgba(0,0,0,0.5); color: #fff; font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5);">
+                            </div>
+                            <div style="flex: 1;">
+                                <span style="font-size: 0.75rem; color: #94a3b8;">Binary (Circuit Pins)</span>
+                                <input type="text" id="calc-out-bin" readonly style="background: rgba(0,0,0,0.5); color: var(--accent-cyan); font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5); letter-spacing: 2px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnSynthesizeArithmetic" class="primary-btn synthesize-btn" style="margin-top: 1.5rem;">Generate Full Logic Pipeline AST ⚡</button>
             </div>
 
             <div id="errorMsg" class="error"></div>
@@ -932,11 +1010,6 @@
         if (section) section.scrollIntoView({ behavior: 'smooth' });
     }
 
-    function scrollToAiAssistant() {
-        const aiSec = document.getElementById('aiAssistantSection');
-        if (aiSec) aiSec.scrollIntoView({ behavior: 'smooth' });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         // UI Tabs Switcher
         document.querySelectorAll('.tab').forEach(tab => {
@@ -1001,60 +1074,168 @@
         const scrollTopBtn = document.getElementById("scrollTopBtn");
         window.onscroll = () => { scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none"; };
         scrollTopBtn.onclick = () => { window.scrollTo({top: 0, behavior: 'smooth'}); };
-    });
 
-    document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('submitBtn').addEventListener('click', async () => {
-        const userPrompt = document.getElementById('prompt').value.trim();
-        const output = document.getElementById('responseOutput');
-        const exprInput = document.getElementById('inputExpr');
+        // Gemini AI Logic
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const userPrompt = document.getElementById('prompt').value.trim();
+            const output = document.getElementById('responseOutput');
+            const exprInput = document.getElementById('inputExpr');
 
-        if (!userPrompt) {
-            output.textContent = 'Please enter a circuit description.';
-            return;
-        }
+            if (!userPrompt) {
+                output.textContent = 'Please enter a circuit description.';
+                return;
+            }
 
-        output.textContent = 'Analyzing logic description & generating expression...';
+            output.textContent = 'Analyzing logic description & generating expression...';
 
-        try {
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: userPrompt })
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: userPrompt })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error || `HTTP Error ${response.status}`);
+
+                const cleanExpr = data.expression ? data.expression.trim() : '';
+                const mapping = data.mapping; 
+
+                if (!cleanExpr) throw new Error('Failed to parse expression from response.');
+
+                output.textContent = `Generated Expression: ${cleanExpr}`;
+
+                const mapDiv = document.getElementById('variableMapping');
+                if (mapping) {
+                    let mapText = Object.entries(mapping).map(([k, v]) => `${k} = ${v.toUpperCase()}`).join(' | ');
+                    mapDiv.textContent = `Logic Mapping: ${mapText}`;
+                    mapDiv.style.display = 'block';
+                } else {
+                    mapDiv.style.display = 'none';
+                }
+
+                if (exprInput) exprInput.value = cleanExpr;
+                switchTabAndFocus('tab-expr');
+                
+                const synthesizeBtn = document.getElementById('btnSynthesizeExpr');
+                if (synthesizeBtn) synthesizeBtn.click();
+
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        });
+
+        // Live Auto-Translator Calculator Setup
+        const calcConfig = {
+            'ha': { l1: 'A (1-bit)', b1: 1, l2: 'B (1-bit)', b2: 1, l3: null, b3: 0, outBits: 2 },
+            'fa': { l1: 'A (1-bit)', b1: 1, l2: 'B (1-bit)', b2: 1, l3: 'Cin (1-bit)', b3: 1, outBits: 2 },
+            'hs': { l1: 'A (1-bit)', b1: 1, l2: 'B (1-bit)', b2: 1, l3: null, b3: 0, outBits: 2 },
+            'fs': { l1: 'A (1-bit)', b1: 1, l2: 'B (1-bit)', b2: 1, l3: 'Bin (1-bit)', b3: 1, outBits: 2 },
+            'mult2': { l1: 'A (2-bit)', b1: 2, l2: 'B (2-bit)', b2: 2, l3: null, b3: 0, outBits: 4 },
+            'mult3': { l1: 'A (3-bit)', b1: 3, l2: 'B (3-bit)', b2: 3, l3: null, b3: 0, outBits: 6 },
+            'mux21': { l1: 'Data D (2-bit)', b1: 2, l2: 'Select S (1-bit)', b2: 1, l3: null, b3: 0, outBits: 1 },
+            'mux41': { l1: 'Data D (4-bit)', b1: 4, l2: 'Select S (2-bit)', b2: 2, l3: null, b3: 0, outBits: 1 }
+        };
+
+        function initCalculator() {
+            const type = document.getElementById('selectArithmetic').value;
+            const cfg = calcConfig[type];
+
+            document.getElementById('lbl-calc-in1').innerText = cfg.l1;
+            document.getElementById('lbl-calc-in2').innerText = cfg.l2;
+            
+            if (cfg.l3) {
+                document.getElementById('calc-in3-box').style.display = 'block';
+                document.getElementById('lbl-calc-in3').innerText = cfg.l3;
+            } else {
+                document.getElementById('calc-in3-box').style.display = 'none';
+            }
+            
+            ['in1', 'in2', 'in3'].forEach((prefix, i) => {
+                let decEl = document.getElementById(`calc-${prefix}-dec`);
+                let binEl = document.getElementById(`calc-${prefix}-bin`);
+                decEl.value = 0;
+                binEl.value = '0'.padStart(i < 2 ? cfg[`b${i+1}`] : (cfg.l3 ? cfg.b3 : 1), '0');
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP Error ${response.status}`);
-            }
-
-            const cleanExpr = data.expression ? data.expression.trim() : '';
-
-            if (!cleanExpr) {
-                throw new Error('Failed to parse expression from response.');
-            }
-
-            output.textContent = `Generated Expression: ${cleanExpr}`;
-
-            if (exprInput) {
-                exprInput.value = cleanExpr;
-            }
-
-            switchTabAndFocus('tab-expr');
-
-            const synthesizeBtn = document.getElementById('btnSynthesizeExpr');
-            if (synthesizeBtn) {
-                synthesizeBtn.click();
-            }
-
-        } catch (error) {
-            output.textContent = 'Error: ' + error.message;
+            updateCalcOutputs();
         }
+
+        function syncCalcInput(changedType, prefix, bits) {
+            let decEl = document.getElementById(`calc-${prefix}-dec`);
+            let binEl = document.getElementById(`calc-${prefix}-bin`);
+            let maxVal = (1 << bits) - 1;
+
+            if (changedType === 'dec') {
+                let val = parseInt(decEl.value) || 0;
+                if (val > maxVal) val = maxVal;
+                if (val < 0) val = 0;
+                decEl.value = val;
+                binEl.value = val.toString(2).padStart(bits, '0');
+            } else {
+                let valStr = binEl.value.replace(/[^01]/g, '').slice(-bits);
+                let val = parseInt(valStr, 2) || 0;
+                binEl.value = valStr.padStart(bits, '0');
+                decEl.value = val;
+            }
+            updateCalcOutputs();
+        }
+
+        function updateCalcOutputs() {
+            let type = document.getElementById('selectArithmetic').value;
+            let cnf = calcConfig[type];
+            
+            let v1 = parseInt(document.getElementById('calc-in1-dec').value) || 0;
+            let v2 = parseInt(document.getElementById('calc-in2-dec').value) || 0;
+            let v3 = cnf.l3 ? (parseInt(document.getElementById('calc-in3-dec').value) || 0) : 0;
+            
+            let outDec = 0, outBinVal = 0;
+
+            if(type === 'ha') { 
+                outDec = v1 + v2; outBinVal = outDec; 
+            }
+            else if(type === 'fa') { 
+                outDec = v1 + v2 + v3; outBinVal = outDec; 
+            }
+            else if(type === 'hs') { 
+                outDec = v1 - v2; 
+                let bout = (v1 < v2) ? 1 : 0;
+                let diff = (v1 ^ v2) & 1;
+                outBinVal = (bout << 1) | diff; 
+            }
+            else if(type === 'fs') {
+                outDec = v1 - v2 - v3;
+                let diff = (v1 ^ v2 ^ v3) & 1;
+                let bout = ((~v1 & (v2 ^ v3)) | (v2 & v3)) & 1;
+                outBinVal = (bout << 1) | diff;
+            }
+            else if(type === 'mult2' || type === 'mult3') {
+                outDec = v1 * v2; outBinVal = outDec;
+            }
+            else if(type === 'mux21' || type === 'mux41') {
+                outBinVal = (v1 >> v2) & 1;
+                outDec = outBinVal;
+            }
+
+            document.getElementById('calc-out-dec').value = outDec;
+            document.getElementById('calc-out-bin').value = outBinVal.toString(2).padStart(cnf.outBits, '0');
+        }
+
+        document.getElementById('selectArithmetic').addEventListener('change', initCalculator);
+        
+        ['in1', 'in2', 'in3'].forEach((prefix, i) => {
+            document.getElementById(`calc-${prefix}-dec`).addEventListener('input', () => {
+                const type = document.getElementById('selectArithmetic').value;
+                syncCalcInput('dec', prefix, calcConfig[type][`b${i+1}`] || 1);
+            });
+            document.getElementById(`calc-${prefix}-bin`).addEventListener('input', () => {
+                const type = document.getElementById('selectArithmetic').value;
+                syncCalcInput('bin', prefix, calcConfig[type][`b${i+1}`] || 1);
+            });
+        });
+        
+        initCalculator();
     });
-});
 
     function processInput() {
         const errorMsg = document.getElementById('errorMsg');
@@ -1126,11 +1307,11 @@
                 outputs.appendChild(renderBlockDiagram(type));
             }
 
-            synthesisQueue.forEach(job => {
+            synthesisQueue.forEach((job, index) => {
                 const section = document.createElement('div');
                 section.className = 'multi-output-section';
                 section.innerHTML = `<h2 class="output-header">⚙️ Synthesizing: ${job.name} (${job.vars.length} Variables)</h2>`;
-                section.innerHTML += runSynthesis(job.vars, job.tt);
+                section.innerHTML += runSynthesis(job.vars, job.tt, index);
                 outputs.appendChild(section);
             });
 
@@ -1246,17 +1427,7 @@
 
     function renderKMapSVG(vars, minterms1, dontCares, primeImplicantsBits, sopTerms) {
         const numVars = vars.length;
-
-        const groupColors = [
-            '#00f3ff', // Electric Cyan
-            '#f43f5e', // Neon Rose
-            '#10b981', // Vivid Emerald
-            '#f59e0b', // Amber
-            '#a855f7', // Purple
-            '#ec4899', // Pink
-            '#3b82f6', // Electric Blue
-            '#84cc16'  // Lime
-        ];
+        const groupColors = ['#00f3ff', '#f43f5e', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#3b82f6', '#84cc16'];
 
         const mintermValue = {};
         for (let m = 0; m < Math.pow(2, numVars); m++) {
@@ -1265,74 +1436,36 @@
             else mintermValue[m] = '0';
         }
 
-        let numSubRows = 1, numSubCols = 1;
-        let numRows = 2, numCols = 2;
+        let numSubRows = 1, numSubCols = 1, numRows = 2, numCols = 2;
         let rowVars = [], colVars = [], mapVars = [];
         let rowGray = [0, 1], colGray = [0, 1];
         let rowGrayLabels = ['0', '1'], colGrayLabels = ['0', '1'];
         let subMapLabels = [''];
 
-        if (numVars === 1) {
-            rowVars = [vars[0]]; colVars = [];
-            numRows = 2; numCols = 1;
-            colGray = [0]; colGrayLabels = [''];
-        } else if (numVars === 2) {
-            rowVars = [vars[0]]; colVars = [vars[1]];
-            numRows = 2; numCols = 2;
-        } else if (numVars === 3) {
-            rowVars = [vars[0]]; colVars = [vars[1], vars[2]];
-            numRows = 2; numCols = 4;
-            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
-        } else if (numVars === 4) {
-            rowVars = [vars[0], vars[1]]; colVars = [vars[2], vars[3]];
-            numRows = 4; numCols = 4;
-            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
-            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
-        } else if (numVars === 5) {
-            mapVars = [vars[0]];
-            rowVars = [vars[1], vars[2]]; colVars = [vars[3], vars[4]];
-            numSubRows = 1; numSubCols = 2;
-            numRows = 4; numCols = 4;
-            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
-            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
-            subMapLabels = [`${vars[0]} = 0`, `${vars[0]} = 1`];
-        } else if (numVars === 6) {
-            mapVars = [vars[0], vars[1]];
-            rowVars = [vars[2], vars[3]]; colVars = [vars[4], vars[5]];
-            numSubRows = 2; numSubCols = 2;
-            numRows = 4; numCols = 4;
-            rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10'];
-            colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10'];
-            subMapLabels = [
-                `${vars[0]}${vars[1]} = 00`, `${vars[0]}${vars[1]} = 01`,
-                `${vars[0]}${vars[1]} = 10`, `${vars[0]}${vars[1]} = 11`
-            ];
-        }
+        if (numVars === 1) { rowVars = [vars[0]]; colVars = []; numRows = 2; numCols = 1; colGray = [0]; colGrayLabels = ['']; }
+        else if (numVars === 2) { rowVars = [vars[0]]; colVars = [vars[1]]; numRows = 2; numCols = 2; }
+        else if (numVars === 3) { rowVars = [vars[0]]; colVars = [vars[1], vars[2]]; numRows = 2; numCols = 4; colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10']; }
+        else if (numVars === 4) { rowVars = [vars[0], vars[1]]; colVars = [vars[2], vars[3]]; numRows = 4; numCols = 4; rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10']; colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10']; }
+        else if (numVars === 5) { mapVars = [vars[0]]; rowVars = [vars[1], vars[2]]; colVars = [vars[3], vars[4]]; numSubRows = 1; numSubCols = 2; numRows = 4; numCols = 4; rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10']; colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10']; subMapLabels = [`${vars[0]} = 0`, `${vars[0]} = 1`]; }
+        else if (numVars === 6) { mapVars = [vars[0], vars[1]]; rowVars = [vars[2], vars[3]]; colVars = [vars[4], vars[5]]; numSubRows = 2; numSubCols = 2; numRows = 4; numCols = 4; rowGray = [0, 1, 3, 2]; rowGrayLabels = ['00', '01', '11', '10']; colGray = [0, 1, 3, 2]; colGrayLabels = ['00', '01', '11', '10']; subMapLabels = [`${vars[0]}${vars[1]} = 00`, `${vars[0]}${vars[1]} = 01`, `${vars[0]}${vars[1]} = 10`, `${vars[0]}${vars[1]} = 11`]; }
 
         function getMinterm(sR, sC, r, c) {
             let subVal = 0;
             if (numVars === 5) subVal = sC;
-            else if (numVars === 6) {
-                const mapGray = [[0, 1], [2, 3]];
-                subVal = mapGray[sR][sC];
-            }
+            else if (numVars === 6) subVal = [[0, 1], [2, 3]][sR][sC];
 
             if (numVars === 1) return r;
             if (numVars === 2) return (r << 1) | c;
             if (numVars === 3) return (r << 2) | colGray[c];
             if (numVars === 4) return (rowGray[r] << 2) | colGray[c];
-            if (numVars === 5) return (subVal << 4) | (rowGray[r] << 2) | colGray[c];
-            if (numVars === 6) return (subVal << 4) | (rowGray[r] << 2) | colGray[c];
+            if (numVars >= 5) return (subVal << 4) | (rowGray[r] << 2) | colGray[c];
         }
 
-        const cellW = 68, cellH = 58;
-        const headerW = 75, headerH = 50;
+        const cellW = 68, cellH = 58, headerW = 75, headerH = 50;
         const subMapTitleH = (numVars >= 5) ? 35 : 0;
         const gapX = 40, gapY = 40;
-
         const subMapWidth = headerW + numCols * cellW;
         const subMapHeight = headerH + numRows * cellH;
-
         const svgW = numSubCols * subMapWidth + (numSubCols - 1) * gapX + 40;
         const svgH = numSubRows * (subMapHeight + subMapTitleH) + (numSubRows - 1) * gapY + 40;
 
@@ -1344,54 +1477,30 @@
                 const offsetX = 20 + sC * (subMapWidth + gapX);
                 const offsetY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH;
 
-                if (numVars >= 5) {
-                    svg += `<text x="${offsetX + subMapWidth / 2}" y="${offsetY - 12}" font-size="15" font-weight="bold" fill="#00f3ff" text-anchor="middle">${subMapLabels[subIdx]}</text>`;
-                }
+                if (numVars >= 5) svg += `<text x="${offsetX + subMapWidth / 2}" y="${offsetY - 12}" font-size="15" font-weight="bold" fill="#00f3ff" text-anchor="middle">${subMapLabels[subIdx]}</text>`;
 
-                const startX = offsetX + headerW;
-                const startY = offsetY + headerH;
-
-                const rowLabelStr = rowVars.join('');
-                const colLabelStr = colVars.join('');
+                const startX = offsetX + headerW, startY = offsetY + headerH;
+                const rowLabelStr = rowVars.join(''), colLabelStr = colVars.join('');
+                
                 svg += `<line x1="${offsetX + 12}" y1="${offsetY + 12}" x2="${startX}" y2="${startY}" stroke="#475569" stroke-width="1.5" />`;
-                svg += `<text x="${startX - 8}" y="${offsetY + 24}" font-size="12" fill="#cbd5e1" text-anchor="end" font-weight="700">${rowLabelStr}</text>`;
-                if (colLabelStr) {
-                    svg += `<text x="${offsetX + 20}" y="${startY - 8}" font-size="12" fill="#00f3ff" text-anchor="start" font-weight="700">${colLabelStr}</text>`;
-                }
+                svg += `<text x="${offsetX + 25}" y="${startY - 8}" font-size="14" fill="#cbd5e1" text-anchor="start" font-weight="700">${rowLabelStr}</text>`;
+                if (colLabelStr) svg += `<text x="${startX - 8}" y="${offsetY + 22}" font-size="14" fill="#00f3ff" text-anchor="end" font-weight="700">${colLabelStr}</text>`;
 
-                for (let c = 0; c < numCols; c++) {
-                    const cx = startX + c * cellW + cellW / 2;
-                    svg += `<text x="${cx}" y="${startY - 14}" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${colGrayLabels[c]}</text>`;
-                }
-
-                for (let r = 0; r < numRows; r++) {
-                    const cy = startY + r * cellH + cellH / 2 + 5;
-                    svg += `<text x="${startX - 20}" y="${cy}" font-size="14" font-weight="bold" fill="#cbd5e1" text-anchor="middle">${rowGrayLabels[r]}</text>`;
-                }
+                for (let c = 0; c < numCols; c++) svg += `<text x="${startX + c * cellW + cellW / 2}" y="${startY - 14}" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${colGrayLabels[c]}</text>`;
+                for (let r = 0; r < numRows; r++) svg += `<text x="${startX - 20}" y="${startY + r * cellH + cellH / 2 + 5}" font-size="14" font-weight="bold" fill="#cbd5e1" text-anchor="middle">${rowGrayLabels[r]}</text>`;
 
                 svg += `<rect x="${startX}" y="${startY}" width="${numCols * cellW}" height="${numRows * cellH}" fill="none" stroke="#334155" stroke-width="2.5" rx="4" />`;
-                for (let c = 1; c < numCols; c++) {
-                    const x = startX + c * cellW;
-                    svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + numRows * cellH}" stroke="#334155" stroke-width="1.5" />`;
-                }
-                for (let r = 1; r < numRows; r++) {
-                    const y = startY + r * cellH;
-                    svg += `<line x1="${startX}" y1="${y}" x2="${startX + numCols * cellW}" y2="${y}" stroke="#334155" stroke-width="1.5" />`;
-                }
+                for (let c = 1; c < numCols; c++) { const x = startX + c * cellW; svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + numRows * cellH}" stroke="#334155" stroke-width="1.5" />`; }
+                for (let r = 1; r < numRows; r++) { const y = startY + r * cellH; svg += `<line x1="${startX}" y1="${y}" x2="${startX + numCols * cellW}" y2="${y}" stroke="#334155" stroke-width="1.5" />`; }
 
                 for (let r = 0; r < numRows; r++) {
                     for (let c = 0; c < numCols; c++) {
                         const m = getMinterm(sR, sC, r, c);
                         const val = mintermValue[m];
-                        const x = startX + c * cellW;
-                        const y = startY + r * cellH;
+                        const x = startX + c * cellW, y = startY + r * cellH;
 
                         svg += `<text x="${x + cellW - 5}" y="${y + 13}" font-size="9" fill="#64748b" text-anchor="end">${m}</text>`;
-
-                        let valColor = '#64748b';
-                        if (val === '1') valColor = '#10b981';
-                        else if (val === 'X') valColor = '#f59e0b';
-
+                        let valColor = val === '1' ? '#10b981' : (val === 'X' ? '#f59e0b' : '#64748b');
                         svg += `<text x="${x + cellW/2}" y="${y + cellH/2 + 7}" font-size="20" font-weight="bold" fill="${valColor}" text-anchor="middle">${val}</text>`;
                     }
                 }
@@ -1404,13 +1513,9 @@
 
             for (let sR = 0; sR < numSubRows; sR++) {
                 for (let sC = 0; sC < numSubCols; sC++) {
-                    const offsetX = 20 + sC * (subMapWidth + gapX);
-                    const offsetY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH;
-                    const startX = offsetX + headerW;
-                    const startY = offsetY + headerH;
-
-                    const coveredRows = new Set();
-                    const coveredCols = new Set();
+                    const startX = 20 + sC * (subMapWidth + gapX) + headerW;
+                    const startY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH + headerH;
+                    const coveredRows = new Set(), coveredCols = new Set();
                     let cellCount = 0;
 
                     for (let r = 0; r < numRows; r++) {
@@ -1418,16 +1523,8 @@
                             const m = getMinterm(sR, sC, r, c);
                             const bin = m.toString(2).padStart(numVars, '0');
                             let match = true;
-                            for (let k = 0; k < numVars; k++) {
-                                if (bits[k] !== '-' && bits[k] !== bin[k]) {
-                                    match = false; break;
-                                }
-                            }
-                            if (match) {
-                                coveredRows.add(r);
-                                coveredCols.add(c);
-                                cellCount++;
-                            }
+                            for (let k = 0; k < numVars; k++) { if (bits[k] !== '-' && bits[k] !== bin[k]) { match = false; break; } }
+                            if (match) { coveredRows.add(r); coveredCols.add(c); cellCount++; }
                         }
                     }
 
@@ -1435,7 +1532,6 @@
 
                     const rows = Array.from(coveredRows).sort((a,b)=>a-b);
                     const cols = Array.from(coveredCols).sort((a,b)=>a-b);
-
                     const isRowWrapped = (rows.length === 2 && rows[0] === 0 && rows[1] === numRows - 1);
                     const isColWrapped = (cols.length === 2 && cols[0] === 0 && cols[1] === numCols - 1);
 
@@ -1454,39 +1550,24 @@
                     }
 
                     if (isRowWrapped) {
-                        const minC = Math.min(...cols); const maxC = Math.max(...cols);
-                        const gx1 = startX + minC * cellW + inset;
-                        const gx2 = startX + (maxC + 1) * cellW - inset;
-
-                        const gyTop1 = startY + inset; const gyTop2 = startY + cellH - inset;
-                        svg += `<path d="M ${gx1},${gyTop2} V ${gyTop1} H ${gx2} V ${gyTop2}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
-
-                        const gyBot1 = startY + (numRows - 1) * cellH + inset; const gyBot2 = startY + numRows * cellH - inset;
-                        svg += `<path d="M ${gx1},${gyBot1} V ${gyBot2} H ${gx2} V ${gyBot1}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        const gx1 = startX + Math.min(...cols) * cellW + inset;
+                        const gx2 = startX + (Math.max(...cols) + 1) * cellW - inset;
+                        svg += `<path d="M ${gx1},${startY + cellH - inset} V ${startY + inset} H ${gx2} V ${startY + cellH - inset}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        svg += `<path d="M ${gx1},${startY + (numRows - 1) * cellH + inset} V ${startY + numRows * cellH - inset} H ${gx2} V ${startY + (numRows - 1) * cellH + inset}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
                         continue;
                     }
 
                     if (isColWrapped) {
-                        const minR = Math.min(...rows); const maxR = Math.max(...rows);
-                        const gy1 = startY + minR * cellH + inset;
-                        const gy2 = startY + (maxR + 1) * cellH - inset;
-
-                        const gxLeft1 = startX + inset; const gxLeft2 = startX + cellW - inset;
-                        svg += `<path d="M ${gxLeft2},${gy1} H ${gxLeft1} V ${gy2} H ${gxLeft2}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
-
-                        const gxRight1 = startX + (numCols - 1) * cellW + inset; const gxRight2 = startX + numCols * cellW - inset;
-                        svg += `<path d="M ${gxRight1},${gy1} H ${gxRight2} V ${gy2} H ${gxRight1}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        const gy1 = startY + Math.min(...rows) * cellH + inset;
+                        const gy2 = startY + (Math.max(...rows) + 1) * cellH - inset;
+                        svg += `<path d="M ${startX + cellW - inset},${gy1} H ${startX + inset} V ${gy2} H ${startX + cellW - inset}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
+                        svg += `<path d="M ${startX + (numCols - 1) * cellW + inset},${gy1} H ${startX + numCols * cellW - inset} V ${gy2} H ${startX + (numCols - 1) * cellW + inset}" fill="${col}" fill-opacity="0.12" stroke="${col}" stroke-width="2.5" />`;
                         continue;
                     }
 
-                    const minR = Math.min(...rows); const maxR = Math.max(...rows);
-                    const minC = Math.min(...cols); const maxC = Math.max(...cols);
-
-                    const gx = startX + minC * cellW + inset;
-                    const gy = startY + minR * cellH + inset;
-                    const gw = (maxC - minC + 1) * cellW - 2 * inset;
-                    const gh = (maxR - minR + 1) * cellH - 2 * inset;
-
+                    const gx = startX + Math.min(...cols) * cellW + inset, gy = startY + Math.min(...rows) * cellH + inset;
+                    const gw = (Math.max(...cols) - Math.min(...cols) + 1) * cellW - 2 * inset;
+                    const gh = (Math.max(...rows) - Math.min(...rows) + 1) * cellH - 2 * inset;
                     svg += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="8" fill="${col}" fill-opacity="0.18" stroke="${col}" stroke-width="2.5" />`;
                 }
             }
@@ -1508,7 +1589,10 @@
         return `<div style="display:flex; flex-direction:column; align-items:center; overflow-x:auto; padding:1rem 0;">${svg}${legendHtml}</div>`;
     }
 
-    function runSynthesis(vars, tt) {
+    // Global registry for simulation blocks mapped to AST validation outputs
+    window.circuitASTs = window.circuitASTs || {};
+
+    function runSynthesis(vars, tt, index = 0) {
         const minterms1 = tt.map((v, i) => v === 1 ? i : -1).filter(i => i !== -1);
         const minterms0 = tt.map((v, i) => v === 0 ? i : -1).filter(i => i !== -1);
         const dontCares = tt.map((v, i) => v === 'X' ? i : -1).filter(i => i !== -1);
@@ -1533,10 +1617,9 @@
 
         const verified = verifyASTs(vars, tt, astStandard, astNAND, astNOR);
         const veriClass = verified ? 'success' : 'fail';
-        const veriText = verified ? '✓ Verification Passed: Minimized K-Map terms, NAND-only, and NOR-only circuits match target specs.' 
-                                  : '✗ Verification Failed: Circuit outputs mismatch.';
+        const veriText = verified ? '✓ Verification Passed: Minimized K-Map terms, NAND-only, and NOR-only circuits match.' : '✗ Verification Failed: Circuit outputs mismatch.';
 
-        let html = `
+        return `
             <div class="verification ${veriClass}">${veriText}</div>
             
             <div class="kmap-wrapper">
@@ -1555,7 +1638,7 @@
                     ${ttHtml}
                 </div>
             </div>
-            
+
             <h3>Synthesized Logic Circuits</h3>
             <div class="circuit-box">
                 <h4>Standard Circuit (AND, OR, NOT)</h4>
@@ -1570,7 +1653,6 @@
                 <div class="svg-container">${renderAST(astNOR)}</div>
             </div>
         `;
-        return html;
     }
 
     function bitsToLiterals(bits, vars, isSOP) {
@@ -1684,7 +1766,7 @@
     function evaluateAST(node, inputs) {
         if (!node) return 0;
         if (node.type === 'CONST') return node.value;
-        if (node.type === 'VAR') return inputs[node.value];
+        if (node.type === 'VAR') return inputs[node.value] || 0;
         if (node.type === 'NOT') return !evaluateAST(node.children[0], inputs);
         if (node.type === 'AND') return node.children.reduce((acc, c) => acc && evaluateAST(c, inputs), true);
         if (node.type === 'OR') return node.children.reduce((acc, c) => acc || evaluateAST(c, inputs), false);
@@ -1834,28 +1916,14 @@
     }
 
     function getArithmeticConfig(type) {
-        if (type === 'ha') return [
-            { name: 'Half Adder (Sum)', vars: ['A','B'], tt: [0,1,1,0] },
-            { name: 'Half Adder (Carry)', vars: ['A','B'], tt: [0,0,0,1] }
-        ];
-        if (type === 'fa') return [
-            { name: 'Full Adder (Sum)', vars: ['A','B','Cin'], tt: [0,1,1,0,1,0,0,1] },
-            { name: 'Full Adder (Cout)', vars: ['A','B','Cin'], tt: [0,0,0,1,0,1,1,1] }
-        ];
-        if (type === 'hs') return [
-            { name: 'Half Subtractor (Diff)', vars: ['A','B'], tt: [0,1,1,0] },
-            { name: 'Half Subtractor (Bout)', vars: ['A','B'], tt: [0,1,0,0] }
-        ];
-        if (type === 'fs') return [
-            { name: 'Full Subtractor (Diff)', vars: ['A','B','Bin'], tt: [0,1,1,0,1,0,0,1] },
-            { name: 'Full Subtractor (Bout)', vars: ['A','B','Bin'], tt: [0,1,1,1,0,0,0,1] }
-        ];
-        if (type === 'mult2') return [
-            { name: '2x2 Multiplier (P3 / MSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1] },
-            { name: '2x2 Multiplier (P2)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,1,0] },
-            { name: '2x2 Multiplier (P1)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,1,1, 0,0,1,1, 0,1,0,0] },
-            { name: '2x2 Multiplier (P0 / LSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,1,0,1, 0,0,0,0, 0,1,0,1] }
-        ];
+        if (type === 'ha') return [ { name: 'Half Adder (Sum)', vars: ['A','B'], tt: [0,1,1,0] }, { name: 'Half Adder (Carry)', vars: ['A','B'], tt: [0,0,0,1] } ];
+        if (type === 'fa') return [ { name: 'Full Adder (Sum)', vars: ['A','B','Cin'], tt: [0,1,1,0,1,0,0,1] }, { name: 'Full Adder (Cout)', vars: ['A','B','Cin'], tt: [0,0,0,1,0,1,1,1] } ];
+        if (type === 'hs') return [ { name: 'Half Subtractor (Diff)', vars: ['A','B'], tt: [0,1,1,0] }, { name: 'Half Subtractor (Bout)', vars: ['A','B'], tt: [0,1,0,0] } ];
+        if (type === 'fs') return [ { name: 'Full Subtractor (Diff)', vars: ['A','B','Bin'], tt: [0,1,1,0,1,0,0,1] }, { name: 'Full Subtractor (Bout)', vars: ['A','B','Bin'], tt: [0,1,1,1,0,0,0,1] } ];
+        if (type === 'mult2') return [ { name: '2x2 Multiplier (P3 / MSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1] }, { name: '2x2 Multiplier (P2)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,1,0] }, { name: '2x2 Multiplier (P1)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,0,1,1, 0,0,1,1, 0,1,0,0] }, { name: '2x2 Multiplier (P0 / LSB)', vars: ['A1','A0','B1','B0'], tt: [0,0,0,0, 0,1,0,1, 0,0,0,0, 0,1,0,1] } ];
+        if (type === 'mux21') return [ { name: '2x1 MUX (Out)', vars: ['D1','D0','S'], tt: [0,0,1,1,0,1,0,1] } ];
+        if (type === 'mux41') { let tt = []; for(let i=0; i<64; i++) { let S = (i >> 4) & 3; let D = [ (i>>3)&1, (i>>2)&1, (i>>1)&1, i&1 ]; tt.push(D[3 - S]); } return [{ name: '4x1 MUX (Out)', vars: ['S1','S0','D3','D2','D1','D0'], tt: tt }]; }
+        if (type === 'mult3') { let p = [[],[],[],[],[],[]]; for(let i=0; i<64; i++) { let A = (i >> 3) & 7, B = i & 7, prod = A * B; for(let bit=0; bit<6; bit++) p[5-bit].push((prod >> bit) & 1); } return p.map((tt, idx) => ({ name: `3x3 Multiplier (P${5-idx})`, vars: ['A2','A1','A0','B2','B1','B0'], tt: tt })); }
     }
 
     function renderBlockDiagram(type) {
@@ -1868,6 +1936,9 @@
         else if(type === 'hs') { title = "Half Subtractor"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div>"; outputs = "<div class='block-pin out'>Diff</div><div class='block-pin out'>Bout</div>"; }
         else if(type === 'fs') { title = "Full Subtractor"; inputs = "<div class='block-pin in'>A</div><div class='block-pin in'>B</div><div class='block-pin in'>Bin</div>"; outputs = "<div class='block-pin out'>Diff</div><div class='block-pin out'>Bout</div>"; }
         else if(type === 'mult2') { title = "2x2 Multiplier"; inputs = "<div class='block-pin in'>A1, A0</div><div class='block-pin in'>B1, B0</div>"; outputs = "<div class='block-pin out'>P3 (MSB)</div><div class='block-pin out'>P2</div><div class='block-pin out'>P1</div><div class='block-pin out'>P0</div>"; }
+        else if(type === 'mux21') { title = "2x1 MUX"; inputs = "<div class='block-pin in'>D1, D0</div><div class='block-pin in'>S</div>"; outputs = "<div class='block-pin out'>Out</div>"; }
+        else if(type === 'mux41') { title = "4x1 MUX"; inputs = "<div class='block-pin in'>S1, S0</div><div class='block-pin in'>D3, D2, D1, D0</div>"; outputs = "<div class='block-pin out'>Out</div>"; }
+        else if(type === 'mult3') { title = "3x3 Multiplier"; inputs = "<div class='block-pin in'>A2, A1, A0</div><div class='block-pin in'>B2, B1, B0</div>"; outputs = "<div class='block-pin out'>P5 (MSB)</div><div class='block-pin out'>P4</div><div class='block-pin out'>P3</div><div class='block-pin out'>P2</div><div class='block-pin out'>P1</div><div class='block-pin out'>P0</div>"; }
 
         div.innerHTML = `<div class="block-box">
             <div class="block-inputs">${inputs}</div>
