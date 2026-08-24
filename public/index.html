@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Logic Engine & 1-6 Var K-Map Solver</title>
+    <title>Universal Logic Engine & AI Synthesizer</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,36 +11,67 @@
     
     <style>
         :root {
+            /* Base Core Colors */
             --primary: #6366f1;
             --primary-hover: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #0ea5e9;
-            --secondary-hover: #0284c7;
+            
+            /* Dark Mode Defaults (Active by default) */
+            --bg-main: #060913;
+            --bg-card: rgba(15, 23, 42, 0.72);
+            --bg-glass: rgba(13, 19, 36, 0.8);
+            --bg-input: rgba(7, 12, 24, 0.85);
+            --bg-block: #1e293b;
+            --bg-result: rgba(7, 12, 24, 0.75);
+            --bg-tt-th: #1e293b;
+            --bg-tt: rgba(4, 8, 18, 0.9);
+            
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --text-dim: #64748b;
+            
+            --border-color: rgba(139, 92, 246, 0.22);
+            --border-highlight: rgba(0, 243, 255, 0.45);
+            
             --accent-cyan: #00f3ff;
             --accent-green: #10b981;
             --accent-amber: #f59e0b;
             --accent-rose: #f43f5e;
             --accent-purple: #c084fc;
-            --accent-violet: #8b5cf6;
             
-            --bg-main: #060913;
-            --bg-card: rgba(15, 23, 42, 0.72);
-            --bg-card-hover: rgba(22, 33, 58, 0.82);
-            --bg-glass: rgba(13, 19, 36, 0.8);
-            --bg-input: rgba(7, 12, 24, 0.85);
-            
-            --text-main: #f8fafc;
-            --text-muted: #a1a1aa;
-            --text-dim: #64748b;
-            --border-color: rgba(139, 92, 246, 0.22);
-            --border-highlight: rgba(0, 243, 255, 0.45);
-            
-            --shadow-glow: 0 0 35px rgba(99, 102, 241, 0.25);
             --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--border-color);
+            --shadow-btn: 0 4px 20px rgba(99, 102, 241, 0.4);
+            
             --radius-pill: 9999px;
             --radius-lg: 20px;
             --radius-md: 14px;
             --radius-sm: 8px;
+        }
+
+        /* Light Mode Theme Overrides */
+        body.light-mode {
+            --bg-main: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --bg-glass: rgba(255, 255, 255, 0.9);
+            --bg-input: #ffffff;
+            --bg-block: #f1f5f9;
+            --bg-result: #f8fafc;
+            --bg-tt-th: #e2e8f0;
+            --bg-tt: #ffffff;
+            
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --text-dim: #94a3b8;
+            
+            --border-color: rgba(99, 102, 241, 0.25);
+            --border-highlight: rgba(99, 102, 241, 0.6);
+            
+            --accent-cyan: #0284c7; /* Darker blue instead of neon cyan */
+            --accent-green: #059669;
+            --accent-amber: #d97706;
+            --accent-purple: #7e22ce;
+            
+            --shadow-card: 0 16px 40px -10px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--border-color);
+            --shadow-btn: 0 4px 15px rgba(99, 102, 241, 0.3);
         }
 
         * {
@@ -59,6 +90,7 @@
             flex-direction: column;
             overflow-x: hidden;
             position: relative;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         /* Full Screen Background Motion Canvas */
@@ -73,20 +105,10 @@
             display: block;
         }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #060913;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3b82f6;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--bg-block); border-radius: 4px; border: 1px solid var(--border-color); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
         /* Top Infinite Auto-Scrolling Announcement Marquee Bar */
         .marquee-container {
@@ -104,40 +126,15 @@
             z-index: 101;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
-
-        .marquee-track {
-            display: inline-flex;
-            gap: 2rem;
-            animation: marqueeScroll 28s linear infinite;
-        }
-
-        .marquee-container:hover .marquee-track {
-            animation-play-state: paused;
-        }
-
-        .marquee-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-        }
-
-        .marquee-item span.dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent-cyan);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent-cyan);
-        }
-
-        @keyframes marqueeScroll {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-        }
+        .marquee-track { display: inline-flex; gap: 2rem; animation: marqueeScroll 28s linear infinite; }
+        .marquee-container:hover .marquee-track { animation-play-state: paused; }
+        .marquee-item { display: inline-flex; align-items: center; gap: 0.5rem; text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+        .marquee-item span.dot { width: 6px; height: 6px; background: #00f3ff; border-radius: 50%; box-shadow: 0 0 8px #00f3ff; }
+        @keyframes marqueeScroll { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
 
         /* Header Styling */
         header.geniani-header {
-            background: rgba(6, 9, 19, 0.75);
+            background: var(--bg-glass);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
             border-bottom: 1px solid var(--border-color);
@@ -145,7 +142,7 @@
             z-index: 100;
             padding: 1.75rem 1.5rem 1.5rem 1.5rem;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
 
         .header-content {
@@ -156,6 +153,30 @@
             align-items: center;
             text-align: center;
             gap: 0.85rem;
+            position: relative;
+        }
+
+        .theme-toggle-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: var(--bg-block);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-pill);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .theme-toggle-btn:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
         }
 
         .header-badge {
@@ -164,15 +185,15 @@
             gap: 0.6rem;
             background: rgba(99, 102, 241, 0.15);
             border: 1px solid rgba(129, 140, 248, 0.4);
-            color: #a5b4fc;
+            color: var(--primary-light);
             padding: 0.45rem 1.25rem;
             border-radius: var(--radius-pill);
             font-size: 0.78rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
         }
+        body.light-mode .header-badge { color: var(--primary); }
 
         .header-badge .badge-pulse {
             width: 8px;
@@ -182,39 +203,22 @@
             box-shadow: 0 0 10px var(--accent-cyan);
             animation: pulseGlow 2s infinite;
         }
-
-        @keyframes pulseGlow {
-            0% { opacity: 0.4; transform: scale(0.9); }
-            50% { opacity: 1; transform: scale(1.3); }
-            100% { opacity: 0.4; transform: scale(0.9); }
-        }
+        @keyframes pulseGlow { 0% { opacity: 0.4; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.3); } 100% { opacity: 0.4; transform: scale(0.9); } }
 
         header h1 {
             font-size: 2.35rem;
             font-weight: 800;
             letter-spacing: -0.03em;
-            background: linear-gradient(135deg, #ffffff 10%, #a5b4fc 40%, #00f3ff 80%, #c084fc 100%);
+            background: linear-gradient(135deg, var(--text-main) 10%, #a5b4fc 40%, var(--accent-cyan) 80%, var(--accent-purple) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             line-height: 1.25;
-            text-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
         }
 
-        header p.subtitle {
-            color: var(--text-muted);
-            font-size: 0.98rem;
-            max-width: 780px;
-            font-weight: 400;
-        }
+        header p.subtitle { color: var(--text-muted); font-size: 0.98rem; max-width: 780px; font-weight: 400; }
 
         /* Main Container & Card Styling */
-        .container {
-            max-width: 1200px;
-            width: 100%;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-            flex: 1;
-        }
+        .container { max-width: 1200px; width: 100%; margin: 2rem auto; padding: 0 1.5rem; flex: 1; }
 
         .card {
             background: var(--bg-card);
@@ -225,505 +229,170 @@
             margin-bottom: 2rem;
             box-shadow: var(--shadow-card);
             border: 1px solid var(--border-color);
-            transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
         .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
             background: linear-gradient(90deg, transparent, var(--accent-cyan), var(--accent-purple), transparent);
-            opacity: 0.6;
-            transition: opacity 0.3s ease;
+            opacity: 0.6; transition: opacity 0.3s ease;
         }
 
         .card:hover {
             border-color: var(--border-highlight);
-            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 243, 255, 0.15);
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.4), 0 0 30px rgba(99, 102, 241, 0.1);
         }
 
-        .card-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.25rem;
-        }
+        .card h2 { font-size: 1.35rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; }
 
-        .card h2 {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: #cbd5e1;
-            letter-spacing: 0.01em;
-        }
+        label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-muted); letter-spacing: 0.01em; }
 
         input[type="text"], input[type="password"], input[type="number"], textarea, .styled-select {
-            width: 100%;
-            padding: 0.9rem 1.15rem;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            font-size: 0.98rem;
-            color: #ffffff;
-            font-family: 'Fira Code', monospace;
-            margin-bottom: 1.25rem;
-            transition: all 0.25s ease;
-            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+            width: 100%; padding: 0.9rem 1.15rem; background: var(--bg-input);
+            border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            font-size: 0.98rem; color: var(--text-main); font-family: 'Fira Code', monospace;
+            margin-bottom: 1.25rem; transition: all 0.25s ease;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
         }
         
-        .calc-input {
-            padding: 0.6rem 0.85rem !important;
-            margin-bottom: 0 !important;
-            border-radius: var(--radius-sm) !important;
+        .calc-input { padding: 0.6rem 0.85rem !important; margin-bottom: 0 !important; border-radius: var(--radius-sm) !important; }
+        textarea { height: 100px; resize: vertical; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+        input[type="text"]:focus, input[type="number"]:focus, textarea:focus, .styled-select:focus {
+            outline: none; border-color: var(--primary); background: var(--bg-card);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2), inset 0 2px 6px rgba(0, 0, 0, 0.05);
         }
 
-        textarea {
-            height: 100px;
-            resize: vertical;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus, .styled-select:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-            background: rgba(7, 12, 24, 0.95);
-            box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.25), inset 0 2px 6px rgba(0, 0, 0, 0.5);
-        }
-
-        input[type="text"]::placeholder, textarea::placeholder {
-            color: var(--text-dim);
-        }
+        input::placeholder, textarea::placeholder { color: var(--text-dim); }
 
         .styled-select {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            cursor: pointer;
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%2300f3ff" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 1.25rem center;
-            background-size: 16px 12px;
-            padding-right: 2.75rem;
+            font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236366f1" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>');
+            background-repeat: no-repeat; background-position: right 1.25rem center; background-size: 16px 12px; padding-right: 2.75rem;
         }
 
+        /* Tabs */
         .tabs-wrapper {
-            background: rgba(7, 12, 24, 0.75);
-            padding: 0.45rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            margin-bottom: 1.75rem;
+            background: var(--bg-block); padding: 0.45rem; border-radius: var(--radius-md);
+            border: 1px solid var(--border-color); margin-bottom: 1.75rem;
         }
-
-        .tabs {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            overflow-x: auto;
-            scroll-behavior: smooth;
-        }
-
+        .tabs { display: flex; align-items: center; gap: 0.4rem; overflow-x: auto; scroll-behavior: smooth; }
         .tab {
-            flex: 1;
-            white-space: nowrap;
-            background: transparent;
-            border: 1px solid transparent;
-            padding: 0.8rem 1.1rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: var(--radius-sm);
-            transition: all 0.25s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            flex: 1; white-space: nowrap; background: transparent; border: 1px solid transparent;
+            padding: 0.8rem 1.1rem; font-size: 0.9rem; font-weight: 600; color: var(--text-muted);
+            cursor: pointer; border-radius: var(--radius-sm); transition: all 0.25s ease;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
         }
-
-        .tab:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.1);
-        }
-
+        .tab:hover { color: var(--text-main); background: rgba(139, 92, 246, 0.08); }
         .tab.active {
-            color: #ffffff;
-            background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
-            border-color: rgba(0, 243, 255, 0.5);
-            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
+            color: #ffffff; background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+            border-color: rgba(99, 102, 241, 0.5); box-shadow: var(--shadow-btn);
         }
+        .tab-content { display: none; animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .tab-content.active { display: block; }
 
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Radio Options */
+        /* Radio Group */
         .radio-group {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 1.25rem;
-            padding: 0.85rem 1.15rem;
-            background: rgba(7, 12, 24, 0.7);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
+            display: flex; gap: 1.5rem; margin-bottom: 1.25rem; padding: 0.85rem 1.15rem;
+            background: var(--bg-block); border-radius: var(--radius-md); border: 1px solid var(--border-color);
         }
+        .radio-group label { margin: 0; display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-weight: 500; color: var(--text-main); }
+        .radio-group input[type="radio"] { accent-color: var(--primary); width: 17px; height: 17px; }
 
-        .radio-group label {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #f8fafc;
-        }
-
-        .radio-group input[type="radio"] {
-            accent-color: var(--accent-cyan);
-            width: 17px;
-            height: 17px;
-        }
-
+        /* Buttons */
         button.primary-btn {
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #0284c7 100%);
-            color: #ffffff;
-            border: 1px solid rgba(0, 243, 255, 0.4);
-            padding: 0.95rem 1.8rem;
-            font-size: 0.98rem;
-            font-weight: 700;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 15px rgba(0, 243, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            position: relative;
-            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 50%, #0284c7 100%);
+            color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 0.95rem 1.8rem;
+            font-size: 0.98rem; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; width: 100%;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: var(--shadow-btn);
+            display: flex; align-items: center; justify-content: center; gap: 0.6rem;
         }
-
-        button.primary-btn:hover {
-            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 50%, #0369a1 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6), 0 0 25px rgba(0, 243, 255, 0.4);
-            border-color: var(--accent-cyan);
-        }
-
-        button.primary-btn:active {
-            transform: translateY(0);
-        }
-
+        button.primary-btn:hover { background: linear-gradient(135deg, #4f46e5 0%, #3730a3 50%, #0369a1 100%); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5); }
+        
         button.secondary-btn {
-            background: rgba(30, 41, 59, 0.8);
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 0.75rem 1.4rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            margin-bottom: 1.25rem;
-            transition: all 0.2s ease;
+            background: var(--bg-block); color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 0.75rem 1.4rem; font-size: 0.9rem; font-weight: 600; border-radius: var(--radius-md);
+            cursor: pointer; margin-bottom: 1.25rem; transition: all 0.2s ease;
         }
-
-        button.secondary-btn:hover {
-            background: #334155;
-            border-color: var(--accent-cyan);
-            transform: translateY(-1px);
-        }
+        button.secondary-btn:hover { background: var(--bg-input); border-color: var(--primary); transform: translateY(-1px); }
 
         .error {
-            color: var(--accent-rose);
-            margin-top: 1rem;
-            font-weight: 600;
-            text-align: center;
-            background: rgba(244, 63, 94, 0.12);
-            border: 1px solid rgba(244, 63, 94, 0.35);
-            padding: 0.85rem;
-            border-radius: var(--radius-md);
-            display: none;
+            color: var(--accent-rose); margin-top: 1rem; font-weight: 600; text-align: center;
+            background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.35);
+            padding: 0.85rem; border-radius: var(--radius-md); display: none;
         }
+        .error:not(:empty) { display: block; }
 
-        .error:not(:empty) {
-            display: block;
-        }
-
+        /* Output Sections */
         .multi-output-section {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border-radius: var(--radius-lg);
-            padding: 2.25rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-card);
-            border: 1px solid var(--border-color);
+            background: var(--bg-card); backdrop-filter: blur(16px); border-radius: var(--radius-lg);
+            padding: 2.25rem; margin-bottom: 2rem; box-shadow: var(--shadow-card); border: 1px solid var(--border-color);
             animation: fadeIn 0.4s ease-out;
         }
-
         .output-header {
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-            color: #ffffff;
-            font-size: 1.4rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;
+            color: var(--text-main); font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem;
         }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        @media (max-width: 850px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .tabs { flex-wrap: wrap; }
-            header h1 { font-size: 1.8rem; }
-        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 850px) { .grid-2 { grid-template-columns: 1fr; } .tabs { flex-wrap: wrap; } header h1 { font-size: 1.8rem; } .theme-toggle-btn { position: relative; margin-top: 10px; } }
 
         .result-box {
-            background: rgba(7, 12, 24, 0.75);
-            padding: 1.5rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
-            margin-bottom: 2rem;
+            background: var(--bg-result); padding: 1.5rem; border-radius: var(--radius-md);
+            border: 1px solid var(--border-color); box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05); margin-bottom: 2rem;
         }
 
         .verification {
-            padding: 1rem 1.25rem;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
+            padding: 1rem 1.25rem; border-radius: var(--radius-md); font-weight: 600; margin-bottom: 1.5rem;
+            text-align: center; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
         }
+        .verification.success { background-color: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.4); }
+        .verification.fail { background-color: rgba(244, 63, 94, 0.15); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.4); }
 
-        .verification.success {
-            background-color: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
-        }
-
-        .verification.fail {
-            background-color: rgba(244, 63, 94, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(244, 63, 94, 0.4);
-        }
-
-        h3 { font-size: 1.2rem; color: #f8fafc; font-weight: 700; margin-bottom: 1rem; }
-        h4 { font-size: 1.05rem; color: #cbd5e1; margin-bottom: 0.8rem; }
+        h3 { font-size: 1.2rem; color: var(--text-main); font-weight: 700; margin-bottom: 1rem; }
+        h4 { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 0.8rem; }
 
         .code-font {
-            font-family: 'Fira Code', monospace;
-            background: rgba(4, 8, 18, 0.95);
-            padding: 0.6rem 1rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.98rem;
-            color: var(--accent-cyan);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            display: inline-block;
-            margin-top: 0.25rem;
-            word-break: break-all;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            font-family: 'Fira Code', monospace; background: var(--bg-tt); padding: 0.6rem 1rem;
+            border-radius: var(--radius-sm); font-size: 0.98rem; color: var(--accent-cyan);
+            border: 1px solid var(--border-color); display: inline-block; margin-top: 0.25rem; word-break: break-all;
         }
 
         /* Truth Table Table */
-        .tt-container {
-            max-height: 380px;
-            overflow-y: auto;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
-            background: rgba(4, 8, 18, 0.9);
-        }
-
+        .tt-container { max-height: 380px; overflow-y: auto; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-tt); }
         table { width: 100%; border-collapse: collapse; text-align: center; }
-        th, td {
-            padding: 0.65rem;
-            font-size: 0.88rem;
-            border-bottom: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-            font-family: 'Fira Code', monospace;
-        }
+        th, td { padding: 0.65rem; font-size: 0.88rem; border-bottom: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-family: 'Fira Code', monospace; color: var(--text-main); }
         th:last-child, td:last-child { border-right: none; }
-        th {
-            background-color: #1e293b;
-            color: #a5b4fc;
-            font-weight: 700;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        td.tt-one { color: var(--accent-green); font-weight: bold; text-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
-        td.tt-zero { color: var(--text-muted); }
-        td.tt-x { color: var(--accent-amber); font-weight: bold; text-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
+        th { background-color: var(--bg-tt-th); color: var(--primary); font-weight: 700; position: sticky; top: 0; z-index: 10; }
+        td.tt-one { color: var(--accent-green); font-weight: bold; }
+        td.tt-zero { color: var(--text-dim); }
+        td.tt-x { color: var(--accent-amber); font-weight: bold; }
 
-        select.tt-select {
-            background: #060913;
-            color: var(--accent-cyan);
-            border: 1px solid var(--border-color);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-weight: 600;
-        }
+        select.tt-select { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600; }
 
-        /* K-Map Wrapper */
-        .kmap-wrapper {
-            background: rgba(7, 12, 24, 0.75);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            overflow-x: auto;
-            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Circuits */
-        .circuit-box {
-            background: rgba(7, 12, 24, 0.65);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .svg-container {
-            overflow: auto;
-            background: #040711;
-            border: 1px dashed var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
-            max-height: 550px;
-            width: 100%;
-            box-shadow: inset 0 2px 15px rgba(0,0,0,0.8);
-            position: relative;
-        }
+        /* Wrappers for Visuals */
+        .kmap-wrapper { background: var(--bg-result); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem; overflow-x: auto; box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05); }
+        .circuit-box { background: var(--bg-result); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; }
+        .svg-container { overflow: auto; background: var(--bg-tt); border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; max-height: 550px; width: 100%; box-shadow: inset 0 2px 15px rgba(0,0,0,0.1); position: relative; }
         .svg-container svg { display: block; margin: 0 auto; }
 
         /* Block Diagram */
-        .block-diagram {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2.5rem;
-            background: #040711;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            margin-bottom: 2rem;
-        }
-
-        .block-box {
-            background: #1e293b;
-            border: 2px solid var(--accent-cyan);
-            border-radius: var(--radius-md);
-            padding: 2rem 3rem;
-            text-align: center;
-            position: relative;
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #ffffff;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.25);
-            min-width: 180px;
-        }
-
-        .block-inputs, .block-outputs {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            position: absolute;
-            top: 0; bottom: 0;
-        }
-        .block-inputs { left: -75px; }
-        .block-outputs { right: -75px; }
-        
-        .block-pin {
-            display: flex;
-            align-items: center;
-            font-size: 0.85rem;
-            font-family: 'Fira Code', monospace;
-            color: var(--accent-cyan);
-        }
-        .block-pin.in::after {
-            content: ''; display: inline-block;
-            width: 35px; height: 2px; background: var(--primary);
-            margin-left: 8px;
-        }
-        .block-pin.out::before {
-            content: ''; display: inline-block;
-            width: 35px; height: 2px; background: var(--primary);
-            margin-right: 8px;
-        }
+        .block-diagram { display: flex; justify-content: center; align-items: center; padding: 2.5rem; background: var(--bg-tt); border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 2rem; }
+        .block-box { background: var(--bg-block); border: 2px solid var(--accent-cyan); border-radius: var(--radius-md); padding: 2rem 3rem; text-align: center; position: relative; font-weight: 700; font-size: 1.2rem; color: var(--text-main); box-shadow: 0 0 20px rgba(0, 243, 255, 0.15); min-width: 180px; }
+        .block-inputs, .block-outputs { display: flex; flex-direction: column; justify-content: space-around; position: absolute; top: 0; bottom: 0; }
+        .block-inputs { left: -75px; } .block-outputs { right: -75px; }
+        .block-pin { display: flex; align-items: center; font-size: 0.85rem; font-family: 'Fira Code', monospace; color: var(--accent-cyan); }
+        .block-pin.in::after { content: ''; display: inline-block; width: 35px; height: 2px; background: var(--primary); margin-left: 8px; }
+        .block-pin.out::before { content: ''; display: inline-block; width: 35px; height: 2px; background: var(--primary); margin-right: 8px; }
 
         /* Scroll Top Button */
-        #scrollTopBtn {
-            display: none;
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 99;
-            font-size: 1.25rem;
-            border: none;
-            outline: none;
-            background: var(--primary);
-            color: white;
-            cursor: pointer;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.6);
-            transition: all 0.3s ease;
-        }
-        #scrollTopBtn:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 8px 30px rgba(0, 243, 255, 0.6);
-        }
+        #scrollTopBtn { display: none; position: fixed; bottom: 30px; right: 30px; z-index: 99; font-size: 1.25rem; border: none; outline: none; background: var(--primary); color: white; cursor: pointer; width: 48px; height: 48px; border-radius: 50%; box-shadow: var(--shadow-btn); transition: all 0.3s ease; }
+        #scrollTopBtn:hover { background-color: var(--primary-hover); transform: translateY(-4px) scale(1.05); }
 
-        footer {
-            text-align: center;
-            padding: 2rem 0;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            border-top: 1px solid var(--border-color);
-            background: rgba(6, 9, 19, 0.8);
-            backdrop-filter: blur(12px);
-        }
+        footer { text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border-color); background: var(--bg-glass); backdrop-filter: blur(12px); }
     </style>
 </head>
 <body>
@@ -737,6 +406,7 @@
             <div class="marquee-item">🛠️ UNIVERSAL NAND & NOR SYNTHESIZER <span class="dot"></span></div>
             <div class="marquee-item">🤖 GEMINI AI LOGIC ASSISTANT <span class="dot"></span></div>
             <div class="marquee-item">🧮 ARITHMETIC CIRCUIT GENERATOR <span class="dot"></span></div>
+            <div class="marquee-item">💻 AI RTL CODE GENERATOR <span class="dot"></span></div>
             <div class="marquee-item">⚡ 1 TO 6 VARIABLE KARNAUGH MAPS <span class="dot"></span></div>
             <div class="marquee-item">🔬 QUINE-MCCLUSKEY OPTIMIZER <span class="dot"></span></div>
             <div class="marquee-item">🛠️ UNIVERSAL NAND & NOR SYNTHESIZER <span class="dot"></span></div>
@@ -747,40 +417,25 @@
 
     <header class="geniani-header">
         <div class="header-content">
+            <button id="themeToggle" class="theme-toggle-btn">☀️ Light Mode</button>
             <div class="header-badge">
                 <span class="badge-pulse"></span>
                 Digital Circuits EE1202
             </div>
             <h1>Advanced Digital Logic Synthesizer</h1>
-            <p class="subtitle">Minimize boolean expressions, solve Quine-McCluskey prime implicants, generate visual 1 to 6 variable Karnaugh Maps (K-Maps) with multi-grid groupings, and synthesize universal logic circuits.</p>
+            <p class="subtitle">Minimize boolean expressions, solve Quine-McCluskey prime implicants, generate visual 1 to 6 variable Karnaugh Maps, synthesize universal logic circuits, and write RTL code instantly using AI.</p>
         </div>
     </header>
 
     <main class="container">
-        <section class="card" id="aiAssistantSection">
-            <div class="card-header-row">
-                <h2>🤖 AI Logic Assistant (Google Gemini)</h2>
-                <span class="header-badge" style="font-size:0.7rem; padding:0.25rem 0.75rem;">AI Powered</span>
-            </div>
-            <div>
-                
-
-                <label for="prompt">Prompt Description</label>
-                <textarea id="prompt" placeholder="Ask AI to help design or optimize a digital logic circuit (e.g. 'Create a 3-input majority voter circuit')..."></textarea>
-
-                <button id="submitBtn" class="primary-btn">Ask AI Assistant ⚡</button>
-
-                <label style="margin-top: 1.25rem;">Response Output</label>
-                <div id="responseOutput" class="code-font" style="min-height: 80px; width: 100%; white-space: pre-wrap; margin-top: 0.5rem; display: block; color: #f8fafc;">Response will appear here...</div>
-                
-                <!-- Variable Mapping UI Block -->
-                <div id="variableMapping" class="code-font" style="margin-top: 0.5rem; color: var(--accent-green); display: none;"></div>
-            </div>
-        </section>
-
+        <!-- SOLVER & GENERATOR SECTION -->
         <section class="card input-section" id="solverSection">
             <div class="tabs-wrapper">
                 <nav class="tabs" aria-label="Synthesis Input Options">
+                    <!-- NEW AI TAB Relocated -->
+                    <button class="tab" data-target="tab-ai">
+                        <span>🤖</span> AI Assistant
+                    </button>
                     <button class="tab active" data-target="tab-expr">
                         <span>⚡</span> Expression
                     </button>
@@ -793,7 +448,25 @@
                     <button class="tab" data-target="tab-arithmetic">
                         <span>🧮</span> Arithmetic Circuits
                     </button>
+                    <button class="tab" data-target="tab-rtl">
+                        <span>💻</span> AI RTL Generator
+                    </button>
                 </nav>
+            </div>
+
+            <!-- TAB 0: AI Logic Assistant -->
+            <div class="tab-content" id="tab-ai">
+                <h2 style="margin-bottom: 1rem;">🤖 AI Logic Assistant (Google Gemini)</h2>
+                <label for="prompt">Problem Statement / Expression Prompt</label>
+                <textarea id="prompt" placeholder="Ask AI to help design or optimize a digital logic circuit (e.g. 'Create a 3-input majority voter circuit with sensors for Temperature, Pressure, and Humidity')..."></textarea>
+
+                <button id="submitBtn" class="primary-btn">Ask AI Assistant & Map Variables ⚡</button>
+
+                <label style="margin-top: 1.25rem;">Expression Output</label>
+                <div id="responseOutput" class="code-font" style="min-height: 80px; width: 100%; white-space: pre-wrap; margin-top: 0.5rem; display: block;">Response will appear here...</div>
+                
+                <!-- Variable Mapping UI Block -->
+                <div id="variableMapping" style="margin-top: 1.25rem; display: none;"></div>
             </div>
 
             <!-- TAB 1: Boolean Expression -->
@@ -844,50 +517,49 @@
                     <option value="mult3">3x3 Multiplier</option>
                 </select>
 
-                <!-- NEW: Live Interactive Google-Translate Style Calculator -->
+                <!-- Live Interactive Calculator -->
                 <div id="interactiveCalc" style="margin-top: 1.5rem; padding: 1.5rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: var(--radius-md);">
                     <h3 style="color: var(--accent-green); margin-bottom: 1rem;">🧮 Live Auto-Translator & Calculator</h3>
                     
                     <div class="grid-2" style="gap: 1.5rem; margin-bottom: 1.5rem;">
                         <!-- Input 1 -->
-                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
-                            <label id="lbl-calc-in1" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input A</label>
+                        <div style="background: var(--bg-tt); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <label id="lbl-calc-in1" style="color: var(--text-main); margin-bottom: 0.5rem; font-weight:700;">Input A</label>
                             <div style="display: flex; gap: 0.5rem;">
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Decimal</span>
                                     <input type="number" id="calc-in1-dec" class="calc-input" value="0">
                                 </div>
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Binary</span>
                                     <input type="text" id="calc-in1-bin" class="calc-input" value="0">
                                 </div>
                             </div>
                         </div>
                         <!-- Input 2 -->
-                        <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px;">
-                            <label id="lbl-calc-in2" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input B</label>
+                        <div style="background: var(--bg-tt); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <label id="lbl-calc-in2" style="color: var(--text-main); margin-bottom: 0.5rem; font-weight:700;">Input B</label>
                             <div style="display: flex; gap: 0.5rem;">
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Decimal</span>
                                     <input type="number" id="calc-in2-dec" class="calc-input" value="0">
                                 </div>
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Binary</span>
                                     <input type="text" id="calc-in2-bin" class="calc-input" value="0">
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Optional Input 3 (Cin / S) -->
-                        <div id="calc-in3-box" style="display: none; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; grid-column: 1 / -1;">
-                            <label id="lbl-calc-in3" style="color: #cbd5e1; margin-bottom: 0.5rem; font-weight:700;">Input C (Cin)</label>
+                        <!-- Input 3 -->
+                        <div id="calc-in3-box" style="display: none; background: var(--bg-tt); padding: 1rem; border-radius: 8px; border: 1px solid var(--border-color); grid-column: 1 / -1;">
+                            <label id="lbl-calc-in3" style="color: var(--text-main); margin-bottom: 0.5rem; font-weight:700;">Input C (Cin)</label>
                             <div style="display: flex; gap: 0.5rem;">
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Decimal</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Decimal</span>
                                     <input type="number" id="calc-in3-dec" class="calc-input" value="0">
                                 </div>
                                 <div style="flex: 1;">
-                                    <span style="font-size: 0.75rem; color: #94a3b8;">Binary</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);">Binary</span>
                                     <input type="text" id="calc-in3-bin" class="calc-input" value="0">
                                 </div>
                             </div>
@@ -898,12 +570,12 @@
                         <label style="color: var(--accent-cyan); font-size: 1.1rem; margin-bottom: 0.75rem;">Combined Output Result</label>
                         <div style="display: flex; gap: 1.5rem;">
                             <div style="flex: 1;">
-                                <span style="font-size: 0.75rem; color: #94a3b8;">Decimal (Math Value)</span>
-                                <input type="text" id="calc-out-dec" readonly style="background: rgba(0,0,0,0.5); color: #fff; font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5);">
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">Decimal (Math Value)</span>
+                                <input type="text" id="calc-out-dec" readonly style="background: var(--bg-input); color: var(--text-main); font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5);">
                             </div>
                             <div style="flex: 1;">
-                                <span style="font-size: 0.75rem; color: #94a3b8;">Binary (Circuit Pins)</span>
-                                <input type="text" id="calc-out-bin" readonly style="background: rgba(0,0,0,0.5); color: var(--accent-cyan); font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5); letter-spacing: 2px;">
+                                <span style="font-size: 0.75rem; color: var(--text-dim);">Binary (Circuit Pins)</span>
+                                <input type="text" id="calc-out-bin" readonly style="background: var(--bg-input); color: var(--accent-cyan); font-weight: bold; font-size: 1.2rem; border-color: rgba(16, 185, 129, 0.5); letter-spacing: 2px;">
                             </div>
                         </div>
                     </div>
@@ -912,10 +584,28 @@
                 <button id="btnSynthesizeArithmetic" class="primary-btn synthesize-btn" style="margin-top: 1.5rem;">Generate Full Logic Pipeline AST ⚡</button>
             </div>
 
+            <!-- TAB 5: RTL Generation -->
+            <div class="tab-content" id="tab-rtl">
+                <label for="rtlPrompt">Problem Statement (RTL Description)</label>
+                <textarea id="rtlPrompt" placeholder="Describe the digital circuit you need code for (e.g. 'Create a 4-bit synchronous up counter with an asynchronous active-low reset and enable signal')..."></textarea>
+
+                <label for="rtlLang">Target HDL Language</label>
+                <select id="rtlLang" class="styled-select">
+                    <option value="Verilog">Verilog</option>
+                    <option value="SystemVerilog">SystemVerilog</option>
+                    <option value="VHDL">VHDL</option>
+                </select>
+
+                <button id="btnGenerateRTL" class="primary-btn" style="margin-top: 1.25rem;">Generate RTL Code ⚡</button>
+
+                <label style="margin-top: 1.25rem;">RTL Output Code</label>
+                <div id="rtlOutput" class="code-font" style="min-height: 250px; width: 100%; white-space: pre-wrap; margin-top: 0.5rem; display: block; overflow-x: auto;">// Your generated code will appear here...</div>
+            </div>
+
             <div id="errorMsg" class="error"></div>
         </section>
 
-        <!-- OUTPUT SECTION (Dynamically Populated) -->
+        <!-- OUTPUT SECTION -->
         <section id="outputs" style="display: none;"></section>
     </main>
 
@@ -928,7 +618,25 @@
     </footer>
 
     <script>
-    // Motion Background Engine — Binary Digital Rain
+    // Theme Toggle State
+    let isLightMode = false;
+    const themeToggleBtn = document.getElementById('themeToggle');
+
+    themeToggleBtn.addEventListener('click', () => {
+        isLightMode = !isLightMode;
+        document.body.classList.toggle('light-mode', isLightMode);
+        themeToggleBtn.innerHTML = isLightMode ? '🌙 Dark Mode' : '☀️ Light Mode';
+        
+        // Re-render outputs if they exist so the SVGs update colors
+        if(document.getElementById('outputs').style.display === 'block') {
+            const activeTab = document.querySelector('.tab.active').dataset.target;
+            if(activeTab !== 'tab-rtl' && activeTab !== 'tab-ai') {
+                processInput();
+            }
+        }
+    });
+
+    // Magical Starry Background Animation Engine
     (function initMotionBackground() {
         const canvas = document.getElementById('bgCanvas');
         if (!canvas) return;
@@ -937,17 +645,23 @@
         let width = canvas.width = window.innerWidth;
         let height = canvas.height = window.innerHeight;
 
-        const fontSize = 16;
-        let columns = [];
+        let particles = [];
+        const numParticles = 120;
+        const colorsDark = ['#ffffff', '#fef08a', '#a5b4fc', '#67e8f9']; // White, Gold, Soft Purple, Cyan
+        const colorsLight = ['#ffffff', '#fbbf24', '#818cf8', '#38bdf8']; 
 
-        function initColumns() {
-            const colCount = Math.ceil(width / fontSize);
-            columns = [];
-            for (let i = 0; i < colCount; i++) {
-                columns.push({
-                    y: Math.random() * -height,
-                    speed: 2 + Math.random() * 4,
-                    nextGlyph: 0
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: Math.random() * 2 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: Math.random() * -1 - 0.2, // drifting upwards
+                    baseAlpha: Math.random() * 0.5 + 0.3,
+                    pulse: Math.random() * Math.PI * 2,
+                    colorIdx: Math.floor(Math.random() * 4)
                 });
             }
         }
@@ -955,47 +669,65 @@
         window.addEventListener('resize', () => {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            initColumns();
+            initParticles();
         });
 
-        initColumns();
-
-        // Paint the base backdrop once so trails fade over a consistent dark canvas
-        ctx.fillStyle = '#050b08';
-        ctx.fillRect(0, 0, width, height);
+        initParticles();
 
         function renderFrame() {
-            // Semi-transparent fill creates the fading trail effect
-            ctx.fillStyle = 'rgba(5, 11, 8, 0.16)';
+            // Draw Gradient Background
+            let grad = ctx.createLinearGradient(0, 0, 0, height);
+            if (isLightMode) {
+                grad.addColorStop(0, '#e0f2fe'); // Soft sky blue top
+                grad.addColorStop(1, '#fdf4ff'); // Soft pinkish/white bottom
+            } else {
+                grad.addColorStop(0, '#0f172a'); // Deep slate blue
+                grad.addColorStop(0.5, '#1e1b4b'); // Deep indigo middle
+                grad.addColorStop(1, '#020617'); // Blackish blue bottom
+            }
+            ctx.fillStyle = grad;
             ctx.fillRect(0, 0, width, height);
 
-            ctx.font = `${fontSize}px 'Fira Code', monospace`;
-            ctx.textBaseline = 'top';
+            const activeColors = isLightMode ? colorsLight : colorsDark;
 
-            for (let i = 0; i < columns.length; i++) {
-                const col = columns[i];
-                const x = i * fontSize;
-                const glyph = Math.random() > 0.5 ? '1' : '0';
+            // Draw Particles
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.pulse += 0.02;
 
-                // Leading glyph glows brighter; trail glyphs are dimmer green
-                ctx.fillStyle = '#e7fff2';
-                ctx.shadowBlur = 6;
-                ctx.shadowColor = '#22ff9c';
-                ctx.fillText(glyph, x, col.y);
+                if (p.y < -10) p.y = height + 10;
+                if (p.x < -10) p.x = width + 10;
+                if (p.x > width + 10) p.x = -10;
 
+                let currentAlpha = p.baseAlpha + Math.sin(p.pulse) * 0.3;
+                if (currentAlpha < 0) currentAlpha = 0;
+                if (currentAlpha > 1) currentAlpha = 1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                
+                // Magical glow effect
+                ctx.shadowBlur = isLightMode ? 6 : 12;
+                ctx.shadowColor = activeColors[p.colorIdx];
+                ctx.fillStyle = `rgba(${hexToRgb(activeColors[p.colorIdx])}, ${currentAlpha})`;
+                ctx.fill();
+                
+                // Reset shadow to not affect other things
                 ctx.shadowBlur = 0;
-                ctx.fillStyle = `rgba(34, 255, 156, ${0.35 + Math.random() * 0.35})`;
-                ctx.fillText(Math.random() > 0.5 ? '1' : '0', x, col.y - fontSize);
-
-                col.y += col.speed;
-
-                if (col.y > height + fontSize * 4 && Math.random() > 0.975) {
-                    col.y = Math.random() * -200;
-                    col.speed = 2 + Math.random() * 4;
-                }
             }
-
             requestAnimationFrame(renderFrame);
+        }
+
+        function hexToRgb(hex) {
+            let r = 0, g = 0, b = 0;
+            if (hex.length == 7) {
+                r = parseInt(hex.slice(1, 3), 16);
+                g = parseInt(hex.slice(3, 5), 16);
+                b = parseInt(hex.slice(5, 7), 16);
+            }
+            return `${r}, ${g}, ${b}`;
         }
 
         renderFrame();
@@ -1075,7 +807,7 @@
         window.onscroll = () => { scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none"; };
         scrollTopBtn.onclick = () => { window.scrollTo({top: 0, behavior: 'smooth'}); };
 
-        // Gemini AI Logic
+        // Gemini AI Logic - BOOLEAN EXPRESSION + MAPPING ENHANCED
         document.getElementById('submitBtn').addEventListener('click', async () => {
             const userPrompt = document.getElementById('prompt').value.trim();
             const output = document.getElementById('responseOutput');
@@ -1089,14 +821,15 @@
             output.textContent = 'Analyzing logic description & generating expression...';
 
             try {
+                const aiSystemInstruction = "\n\nCRITICAL SYSTEM INSTRUCTION: Respond STRICTLY with a valid JSON object. It MUST contain two keys: 'expression' (the minimized boolean expression using only &, |, ~, ^) and 'mapping' (a key-value object explicitly mapping the single letter variables like A, B, C back to the actual problem statement words/concepts). Example: {\"expression\": \"A & B\", \"mapping\": {\"A\": \"Temperature > 30\", \"B\": \"Door is Open\"}}.";
+                
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userPrompt })
+                    body: JSON.stringify({ prompt: userPrompt + aiSystemInstruction })
                 });
 
                 const data = await response.json();
-
                 if (!response.ok) throw new Error(data.error || `HTTP Error ${response.status}`);
 
                 const cleanExpr = data.expression ? data.expression.trim() : '';
@@ -1106,10 +839,19 @@
 
                 output.textContent = `Generated Expression: ${cleanExpr}`;
 
+                // Upgraded visual for Variable Mapping
                 const mapDiv = document.getElementById('variableMapping');
-                if (mapping) {
-                    let mapText = Object.entries(mapping).map(([k, v]) => `${k} = ${v.toUpperCase()}`).join(' | ');
-                    mapDiv.textContent = `Logic Mapping: ${mapText}`;
+                if (mapping && Object.keys(mapping).length > 0) {
+                    let mapHtml = `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); padding: 1.25rem; border-radius: var(--radius-md);">
+                                      <h4 style="color: var(--accent-green); margin-bottom: 0.75rem; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;"><span>📌</span> Problem Statement Variable Mapping</h4>
+                                      <ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 0.95rem; display: grid; gap: 0.5rem;">`;
+                    for (const [key, value] of Object.entries(mapping)) {
+                        mapHtml += `<li style="background: var(--bg-tt); padding: 0.5rem 1rem; border-radius: 6px; border-left: 4px solid var(--accent-green);">
+                                        <strong style="color: var(--text-main); font-family: 'Fira Code', monospace; margin-right: 0.5rem;">${key}</strong> = <span style="color: var(--text-dim);">${value}</span>
+                                    </li>`;
+                    }
+                    mapHtml += `</ul></div>`;
+                    mapDiv.innerHTML = mapHtml;
                     mapDiv.style.display = 'block';
                 } else {
                     mapDiv.style.display = 'none';
@@ -1120,6 +862,44 @@
                 
                 const synthesizeBtn = document.getElementById('btnSynthesizeExpr');
                 if (synthesizeBtn) synthesizeBtn.click();
+
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        });
+
+        // Gemini AI Logic - RTL GENERATOR
+        document.getElementById('btnGenerateRTL').addEventListener('click', async () => {
+            const prompt = document.getElementById('rtlPrompt').value.trim();
+            const lang = document.getElementById('rtlLang').value;
+            const output = document.getElementById('rtlOutput');
+
+            if (!prompt) {
+                output.textContent = 'Please enter a circuit description to generate RTL.';
+                return;
+            }
+
+            output.textContent = 'Analyzing problem statement and generating RTL code...';
+
+            try {
+                const rtlSystemInstruction = `\n\nCRITICAL SYSTEM INSTRUCTION: Generate high-quality, production-ready ${lang} RTL code for the described digital circuit. Respond STRICTLY with a valid JSON object containing exactly ONE key named 'rtl_code'. The value must be the raw code string, properly formatted with newlines. Do NOT wrap the JSON in markdown blocks. Do NOT include markdown code blocks inside the 'rtl_code' string. Example: {"rtl_code": "module my_circuit(...);\\nendmodule"}`;
+                
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt + rtlSystemInstruction })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || `HTTP Error ${response.status}`);
+
+                if (data.rtl_code) {
+                    output.textContent = data.rtl_code;
+                } else if (data.code) { // Fallback
+                    output.textContent = data.code;
+                } else {
+                    output.textContent = JSON.stringify(data, null, 2); 
+                }
 
             } catch (error) {
                 output.textContent = 'Error: ' + error.message;
@@ -1191,31 +971,18 @@
             
             let outDec = 0, outBinVal = 0;
 
-            if(type === 'ha') { 
-                outDec = v1 + v2; outBinVal = outDec; 
-            }
-            else if(type === 'fa') { 
-                outDec = v1 + v2 + v3; outBinVal = outDec; 
-            }
+            if(type === 'ha') { outDec = v1 + v2; outBinVal = outDec; }
+            else if(type === 'fa') { outDec = v1 + v2 + v3; outBinVal = outDec; }
             else if(type === 'hs') { 
                 outDec = v1 - v2; 
-                let bout = (v1 < v2) ? 1 : 0;
-                let diff = (v1 ^ v2) & 1;
-                outBinVal = (bout << 1) | diff; 
+                let bout = (v1 < v2) ? 1 : 0; let diff = (v1 ^ v2) & 1; outBinVal = (bout << 1) | diff; 
             }
             else if(type === 'fs') {
                 outDec = v1 - v2 - v3;
-                let diff = (v1 ^ v2 ^ v3) & 1;
-                let bout = ((~v1 & (v2 ^ v3)) | (v2 & v3)) & 1;
-                outBinVal = (bout << 1) | diff;
+                let diff = (v1 ^ v2 ^ v3) & 1; let bout = ((~v1 & (v2 ^ v3)) | (v2 & v3)) & 1; outBinVal = (bout << 1) | diff;
             }
-            else if(type === 'mult2' || type === 'mult3') {
-                outDec = v1 * v2; outBinVal = outDec;
-            }
-            else if(type === 'mux21' || type === 'mux41') {
-                outBinVal = (v1 >> v2) & 1;
-                outDec = outBinVal;
-            }
+            else if(type === 'mult2' || type === 'mult3') { outDec = v1 * v2; outBinVal = outDec; }
+            else if(type === 'mux21' || type === 'mux41') { outBinVal = (v1 >> v2) & 1; outDec = outBinVal; }
 
             document.getElementById('calc-out-dec').value = outDec;
             document.getElementById('calc-out-bin').value = outBinVal.toString(2).padStart(cnf.outBits, '0');
@@ -1428,6 +1195,14 @@
     function renderKMapSVG(vars, minterms1, dontCares, primeImplicantsBits, sopTerms) {
         const numVars = vars.length;
         const groupColors = ['#00f3ff', '#f43f5e', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#3b82f6', '#84cc16'];
+        
+        // Define theme-aware colors for SVG
+        const cBg = isLightMode ? '#ffffff' : '#040711';
+        const cText = isLightMode ? '#0f172a' : '#f8fafc';
+        const cTextDim = isLightMode ? '#64748b' : '#64748b';
+        const cStroke = isLightMode ? '#cbd5e1' : '#334155';
+        const cPrimary = isLightMode ? '#0284c7' : '#00f3ff';
+        const cZero = isLightMode ? '#94a3b8' : '#64748b';
 
         const mintermValue = {};
         for (let m = 0; m < Math.pow(2, numVars); m++) {
@@ -1469,7 +1244,7 @@
         const svgW = numSubCols * subMapWidth + (numSubCols - 1) * gapX + 40;
         const svgH = numSubRows * (subMapHeight + subMapTitleH) + (numSubRows - 1) * gapY + 40;
 
-        let svg = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="background:#040711; border-radius:12px; font-family:'Fira Code', monospace; user-select:none; box-shadow: 0 0 20px rgba(0,0,0,0.8);">`;
+        let svg = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="background:${cBg}; border-radius:12px; font-family:'Fira Code', monospace; user-select:none; box-shadow: 0 0 20px rgba(0,0,0,0.1);">`;
 
         for (let sR = 0; sR < numSubRows; sR++) {
             for (let sC = 0; sC < numSubCols; sC++) {
@@ -1477,21 +1252,21 @@
                 const offsetX = 20 + sC * (subMapWidth + gapX);
                 const offsetY = 20 + sR * (subMapHeight + subMapTitleH + gapY) + subMapTitleH;
 
-                if (numVars >= 5) svg += `<text x="${offsetX + subMapWidth / 2}" y="${offsetY - 12}" font-size="15" font-weight="bold" fill="#00f3ff" text-anchor="middle">${subMapLabels[subIdx]}</text>`;
+                if (numVars >= 5) svg += `<text x="${offsetX + subMapWidth / 2}" y="${offsetY - 12}" font-size="15" font-weight="bold" fill="${cPrimary}" text-anchor="middle">${subMapLabels[subIdx]}</text>`;
 
                 const startX = offsetX + headerW, startY = offsetY + headerH;
                 const rowLabelStr = rowVars.join(''), colLabelStr = colVars.join('');
                 
-                svg += `<line x1="${offsetX + 12}" y1="${offsetY + 12}" x2="${startX}" y2="${startY}" stroke="#475569" stroke-width="1.5" />`;
-                svg += `<text x="${offsetX + 25}" y="${startY - 8}" font-size="14" fill="#cbd5e1" text-anchor="start" font-weight="700">${rowLabelStr}</text>`;
-                if (colLabelStr) svg += `<text x="${startX - 8}" y="${offsetY + 22}" font-size="14" fill="#00f3ff" text-anchor="end" font-weight="700">${colLabelStr}</text>`;
+                svg += `<line x1="${offsetX + 12}" y1="${offsetY + 12}" x2="${startX}" y2="${startY}" stroke="${cStroke}" stroke-width="1.5" />`;
+                svg += `<text x="${offsetX + 25}" y="${startY - 8}" font-size="14" fill="${cText}" text-anchor="start" font-weight="700">${rowLabelStr}</text>`;
+                if (colLabelStr) svg += `<text x="${startX - 8}" y="${offsetY + 22}" font-size="14" fill="${cPrimary}" text-anchor="end" font-weight="700">${colLabelStr}</text>`;
 
-                for (let c = 0; c < numCols; c++) svg += `<text x="${startX + c * cellW + cellW / 2}" y="${startY - 14}" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${colGrayLabels[c]}</text>`;
-                for (let r = 0; r < numRows; r++) svg += `<text x="${startX - 20}" y="${startY + r * cellH + cellH / 2 + 5}" font-size="14" font-weight="bold" fill="#cbd5e1" text-anchor="middle">${rowGrayLabels[r]}</text>`;
+                for (let c = 0; c < numCols; c++) svg += `<text x="${startX + c * cellW + cellW / 2}" y="${startY - 14}" font-size="14" font-weight="bold" fill="${cPrimary}" text-anchor="middle">${colGrayLabels[c]}</text>`;
+                for (let r = 0; r < numRows; r++) svg += `<text x="${startX - 20}" y="${startY + r * cellH + cellH / 2 + 5}" font-size="14" font-weight="bold" fill="${cText}" text-anchor="middle">${rowGrayLabels[r]}</text>`;
 
-                svg += `<rect x="${startX}" y="${startY}" width="${numCols * cellW}" height="${numRows * cellH}" fill="none" stroke="#334155" stroke-width="2.5" rx="4" />`;
-                for (let c = 1; c < numCols; c++) { const x = startX + c * cellW; svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + numRows * cellH}" stroke="#334155" stroke-width="1.5" />`; }
-                for (let r = 1; r < numRows; r++) { const y = startY + r * cellH; svg += `<line x1="${startX}" y1="${y}" x2="${startX + numCols * cellW}" y2="${y}" stroke="#334155" stroke-width="1.5" />`; }
+                svg += `<rect x="${startX}" y="${startY}" width="${numCols * cellW}" height="${numRows * cellH}" fill="none" stroke="${cStroke}" stroke-width="2.5" rx="4" />`;
+                for (let c = 1; c < numCols; c++) { const x = startX + c * cellW; svg += `<line x1="${x}" y1="${startY}" x2="${x}" y2="${startY + numRows * cellH}" stroke="${cStroke}" stroke-width="1.5" />`; }
+                for (let r = 1; r < numRows; r++) { const y = startY + r * cellH; svg += `<line x1="${startX}" y1="${y}" x2="${startX + numCols * cellW}" y2="${y}" stroke="${cStroke}" stroke-width="1.5" />`; }
 
                 for (let r = 0; r < numRows; r++) {
                     for (let c = 0; c < numCols; c++) {
@@ -1499,8 +1274,8 @@
                         const val = mintermValue[m];
                         const x = startX + c * cellW, y = startY + r * cellH;
 
-                        svg += `<text x="${x + cellW - 5}" y="${y + 13}" font-size="9" fill="#64748b" text-anchor="end">${m}</text>`;
-                        let valColor = val === '1' ? '#10b981' : (val === 'X' ? '#f59e0b' : '#64748b');
+                        svg += `<text x="${x + cellW - 5}" y="${y + 13}" font-size="9" fill="${cTextDim}" text-anchor="end">${m}</text>`;
+                        let valColor = val === '1' ? '#10b981' : (val === 'X' ? '#f59e0b' : cZero);
                         svg += `<text x="${x + cellW/2}" y="${y + cellH/2 + 7}" font-size="20" font-weight="bold" fill="${valColor}" text-anchor="middle">${val}</text>`;
                     }
                 }
@@ -1575,13 +1350,16 @@
 
         svg += `</svg>`;
 
+        const bgLeg = isLightMode ? '#f8fafc' : 'rgba(15,23,42,0.85)';
+        const txLeg = isLightMode ? '#0f172a' : '#f8fafc';
+        
         let legendHtml = `<div style="margin-top:1.25rem; display:flex; flex-wrap:wrap; justify-content:center; gap:0.75rem;">`;
         primeImplicantsBits.forEach((bits, idx) => {
             const col = groupColors[idx % groupColors.length];
             const term = sopTerms[idx] ? sopTerms[idx].join('') : bits;
-            legendHtml += `<div style="display:flex; align-items:center; gap:0.5rem; background:rgba(15,23,42,0.85); padding:0.4rem 0.85rem; border-radius:8px; border:1px solid ${col}88; box-shadow: 0 0 10px ${col}33;">
+            legendHtml += `<div style="display:flex; align-items:center; gap:0.5rem; background:${bgLeg}; padding:0.4rem 0.85rem; border-radius:8px; border:1px solid ${col}88; box-shadow: 0 0 10px ${col}33;">
                 <span style="width:14px; height:14px; border-radius:4px; background:${col}; display:inline-block; box-shadow: 0 0 8px ${col};"></span>
-                <span style="font-family:'Fira Code', monospace; font-size:0.9rem; font-weight:600; color:#f8fafc;">${term} <span style="color:#94a3b8; font-size:0.8rem;">(${bits})</span></span>
+                <span style="font-family:'Fira Code', monospace; font-size:0.9rem; font-weight:600; color:${txLeg};">${term} <span style="color:var(--text-dim); font-size:0.8rem;">(${bits})</span></span>
             </div>`;
         });
         legendHtml += `</div>`;
@@ -1589,7 +1367,6 @@
         return `<div style="display:flex; flex-direction:column; align-items:center; overflow-x:auto; padding:1rem 0;">${svg}${legendHtml}</div>`;
     }
 
-    // Global registry for simulation blocks mapped to AST validation outputs
     window.circuitASTs = window.circuitASTs || {};
 
     function runSynthesis(vars, tt, index = 0) {
@@ -1826,8 +1603,14 @@
     }
 
     function renderAST(originalNode) {
+        const cBgNode = isLightMode ? '#f1f5f9' : '#1e293b';
+        const cWire = isLightMode ? '#94a3b8' : '#475569';
+        const cPrimary = isLightMode ? '#0284c7' : '#00f3ff';
+        const cText = isLightMode ? '#0f172a' : '#f8fafc';
+        const cNotBg = isLightMode ? '#ffffff' : '#0b0f19';
+
         let node = cloneTree(originalNode);
-        if(node.type === 'CONST') return `<svg width="240" height="60"><text x="120" y="35" text-anchor="middle" font-family="sans-serif" fill="#cbd5e1">Output is constant ${node.value}</text></svg>`;
+        if(node.type === 'CONST') return `<svg width="240" height="60"><text x="120" y="35" text-anchor="middle" font-family="sans-serif" fill="${cText}">Output is constant ${node.value}</text></svg>`;
         
         layoutNode(node);
         positionNode(node, 0, 0); 
@@ -1856,18 +1639,18 @@
         let svgHeight = (bounds.maxY - bounds.minY) + (padY * 2);
 
         let svg = `<svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg" style="user-select:none;">`;
-        svg += drawConnections(node);
-        svg += drawNodes(node);
+        svg += drawConnections(node, cWire);
+        svg += drawNodes(node, cBgNode, cPrimary, cText, cNotBg);
         
         let outX = node.type.includes('N') ? node.x + 28 : (node.type==='VAR' ? node.x+20 : node.x+20);
         if(node.type === 'NOT') outX = node.x + 13;
         svg += `<path d="M ${outX},${node.y} L ${outX + 30},${node.y}" stroke="#6366f1" stroke-width="2.5" fill="none"/>`;
-        svg += `<text x="${outX + 40}" y="${node.y + 5}" font-family="'Plus Jakarta Sans', sans-serif" font-weight="bold" fill="#00f3ff">Out</text>`;
+        svg += `<text x="${outX + 40}" y="${node.y + 5}" font-family="'Plus Jakarta Sans', sans-serif" font-weight="bold" fill="${cPrimary}">Out</text>`;
         svg += `</svg>`;
         return svg;
     }
 
-    function drawConnections(node) {
+    function drawConnections(node, cWire) {
         if (!node.children) return "";
         let svg = "";
         node.children.forEach((c, idx) => {
@@ -1880,37 +1663,37 @@
             let inY = (node.y - spread / 2) + (idx * step);
 
             let midX = outX + (inX - outX) / 2;
-            svg += `<path d="M ${outX},${c.y} H ${midX} V ${inY} H ${inX}" fill="none" stroke="#475569" stroke-width="2"/>`;
-            svg += drawConnections(c);
+            svg += `<path d="M ${outX},${c.y} H ${midX} V ${inY} H ${inX}" fill="none" stroke="${cWire}" stroke-width="2"/>`;
+            svg += drawConnections(c, cWire);
         });
         return svg;
     }
 
-    function drawNodes(node) {
+    function drawNodes(node, bg, pri, txt, notBg) {
         let svg = "";
-        if (node.children) node.children.forEach(c => { svg += drawNodes(c); });
+        if (node.children) node.children.forEach(c => { svg += drawNodes(c, bg, pri, txt, notBg); });
         let nx = node.x, ny = node.y;
         
         if (node.type === 'VAR' || node.type === 'CONST') {
-            svg += `<rect x="${nx-18}" y="${ny-15}" width="36" height="30" rx="6" fill="#1e293b" stroke="#00f3ff" stroke-width="1.5"/>`;
-            svg += `<text x="${nx}" y="${ny+5}" font-family="'Fira Code', monospace" font-size="14" font-weight="bold" fill="#00f3ff" text-anchor="middle">${node.value}</text>`;
+            svg += `<rect x="${nx-18}" y="${ny-15}" width="36" height="30" rx="6" fill="${bg}" stroke="${pri}" stroke-width="1.5"/>`;
+            svg += `<text x="${nx}" y="${ny+5}" font-family="'Fira Code', monospace" font-size="14" font-weight="bold" fill="${pri}" text-anchor="middle">${node.value}</text>`;
         } else if (node.type === 'AND') {
-            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
-            svg += `<text x="${nx-5}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">AND</text>`;
+            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="${bg}" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<text x="${nx-5}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="${txt}">AND</text>`;
         } else if (node.type === 'OR') {
-            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
-            svg += `<text x="${nx}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">OR</text>`;
+            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="${bg}" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<text x="${nx}" y="${ny+3}" font-size="9" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="${txt}">OR</text>`;
         } else if (node.type === 'NOT') {
-            svg += `<path d="M ${nx-20},${ny-15} L ${nx+5},${ny} L ${nx-20},${ny+15} Z" fill="#1e293b" stroke="#818cf8" stroke-width="2"/>`;
-            svg += `<circle cx="${nx+9}" cy="${ny}" r="4" fill="#0b0f19" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<path d="M ${nx-20},${ny-15} L ${nx+5},${ny} L ${nx-20},${ny+15} Z" fill="${bg}" stroke="#818cf8" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+9}" cy="${ny}" r="4" fill="${notBg}" stroke="#818cf8" stroke-width="2"/>`;
         } else if (node.type === 'NAND') {
-            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="#1e293b" stroke="#00f3ff" stroke-width="2"/>`;
-            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="#0b0f19" stroke="#00f3ff" stroke-width="2"/>`;
-            svg += `<text x="${nx-5}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">NAND</text>`;
+            svg += `<path d="M ${nx-20},${ny-20} L ${nx},${ny-20} A 20,20 0 0,1 ${nx},${ny+20} L ${nx-20},${ny+20} Z" fill="${bg}" stroke="${pri}" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="${notBg}" stroke="${pri}" stroke-width="2"/>`;
+            svg += `<text x="${nx-5}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="${txt}">NAND</text>`;
         } else if (node.type === 'NOR') {
-            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="#1e293b" stroke="#00f3ff" stroke-width="2"/>`;
-            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="#0b0f19" stroke="#00f3ff" stroke-width="2"/>`;
-            svg += `<text x="${nx}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="#f8fafc">NOR</text>`;
+            svg += `<path d="M ${nx-20},${ny-20} Q ${nx},${ny} ${nx-20},${ny+20} Q ${nx+10},${ny+20} ${nx+20},${ny} Q ${nx+10},${ny-20} ${nx-20},${ny-20} Z" fill="${bg}" stroke="${pri}" stroke-width="2"/>`;
+            svg += `<circle cx="${nx+24}" cy="${ny}" r="4" fill="${notBg}" stroke="${pri}" stroke-width="2"/>`;
+            svg += `<text x="${nx}" y="${ny+3}" font-size="8.5" font-family="'Plus Jakarta Sans', sans-serif" text-anchor="middle" font-weight="bold" fill="${txt}">NOR</text>`;
         }
         return svg;
     }
