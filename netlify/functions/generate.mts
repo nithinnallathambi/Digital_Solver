@@ -1,10 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, type Part } from '@google/genai';
 
-// Initialize the Gemini SDK
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
-export async function POST(req: Request) {
+export default async function (req: Request) {
     try {
+        const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+
         // 1. Parse FormData instead of JSON
         const formData = await req.formData();
         const prompt = formData.get('prompt') as string;
@@ -30,8 +29,7 @@ export async function POST(req: Request) {
         }
         `;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.7-flash' });
-        const contentParts: any[] = [{ text: systemInstruction + "\n\nUser Request: " + (prompt || "See attached media.") }];
+        const contentParts: Part[] = [{ text: systemInstruction + "\n\nUser Request: " + (prompt || "See attached media.") }];
 
         // 2. Convert raw image file to Base64 for the Gemini API
         if (imageFile) {
@@ -52,8 +50,11 @@ export async function POST(req: Request) {
         }
 
         // Generate response
-        const result = await model.generateContent(contentParts);
-        const responseText = result.response.text();
+        const result = await genAI.models.generateContent({
+            model: 'gemini-3.7-flash',
+            contents: contentParts
+        });
+        const responseText = result.text || '';
 
         // Strip out markdown code blocks if the AI wraps the JSON
         const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -79,3 +80,8 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export const config = {
+    path: '/api/generate',
+    method: 'POST'
+};
