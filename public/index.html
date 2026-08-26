@@ -821,29 +821,31 @@
             output.textContent = 'Analyzing logic description & generating expression...';
 
             try {
-                const aiSystemInstruction = "\n\nCRITICAL SYSTEM INSTRUCTION: Respond STRICTLY with a valid JSON object. It MUST contain two keys: 'expression' (the minimized boolean expression using only &, |, ~, ^) and 'mapping' (a key-value object explicitly mapping the single letter variables like A, B, C back to the actual problem statement words/concepts). Example: {\"expression\": \"A & B\", \"mapping\": {\"A\": \"Temperature > 30\", \"B\": \"Door is Open\"}}.";
-                
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userPrompt + aiSystemInstruction })
+                    body: JSON.stringify({ prompt: userPrompt })
                 });
 
                 const data = await response.json();
+                
+                // Gracefully display the error if token limit is hit
                 if (!response.ok) throw new Error(data.error || `HTTP Error ${response.status}`);
 
                 const cleanExpr = data.expression ? data.expression.trim() : '';
                 const mapping = data.mapping; 
+                const chatMsg = data.chat_response;
 
                 if (!cleanExpr) throw new Error('Failed to parse expression from response.');
 
-                output.textContent = `Generated Expression: ${cleanExpr}`;
+                // Display the conversational chat response and the expression
+                output.innerHTML = `<div style="color: var(--accent-cyan); font-weight: bold; margin-bottom: 0.5rem;">🤖 ${chatMsg}</div>Generated Expression: ${cleanExpr}`;
 
-                // Upgraded visual for Variable Mapping
+                // Variable Mapping UI Block
                 const mapDiv = document.getElementById('variableMapping');
                 if (mapping && Object.keys(mapping).length > 0) {
                     let mapHtml = `<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); padding: 1.25rem; border-radius: var(--radius-md);">
-                                      <h4 style="color: var(--accent-green); margin-bottom: 0.75rem; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;"><span>📌</span> Problem Statement Variable Mapping</h4>
+                                      <h4 style="color: var(--accent-green); margin-bottom: 0.75rem; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem;"><span>📌</span> Variable Mapping (A-F)</h4>
                                       <ul style="list-style-type: none; padding-left: 0; margin: 0; font-size: 0.95rem; display: grid; gap: 0.5rem;">`;
                     for (const [key, value] of Object.entries(mapping)) {
                         mapHtml += `<li style="background: var(--bg-tt); padding: 0.5rem 1rem; border-radius: 6px; border-left: 4px solid var(--accent-green);">
@@ -864,7 +866,8 @@
                 if (synthesizeBtn) synthesizeBtn.click();
 
             } catch (error) {
-                output.textContent = 'Error: ' + error.message;
+                // Displays the friendly token limit error safely in the UI
+                output.textContent = '⚠️ ' + error.message;
             }
         });
 
@@ -1091,16 +1094,29 @@
     }
 
     function evaluateExpression(expr, inputs) {
-        let norm = expr.toUpperCase().replace(/\s+/g, '')
-                       .replace(/AND/g, '&').replace(/OR/g, '|').replace(/NOT/g, '~').replace(/XOR/g, '^')
-                       .replace(/\*/g, '&').replace(/\+/g, '|').replace(/!/g, '~');
+        // 1. Replace word operators safely (case-insensitive, matching whole words only)
+        let norm = expr.replace(/\bAND\b/gi, '&')
+                       .replace(/\bOR\b/gi, '|')
+                       .replace(/\bNOT\b/gi, '~')
+                       .replace(/\bXOR\b/gi, '^');
         
+        // 2. Map standard math/programming symbols to our logic engine symbols
+        norm = norm.replace(/\*/g, '&')
+                   .replace(/\+/g, '|')
+                   .replace(/!/g, '~');
+                   
+        // 3. Remove all spaces and uppercase variables
+        norm = norm.replace(/\s+/g, '').toUpperCase();
+        
+        // 4. Handle implicit AND (e.g. AB -> A&B, A(B) -> A&(B))
         norm = norm.replace(/([A-Z\)])(?=[A-Z\(~])/g, '$1&');
         
+        // 5. Inject actual 1s and 0s from the truth table iteration
         Object.keys(inputs).forEach(v => {
             norm = norm.replace(new RegExp(v, 'g'), inputs[v]);
         });
         
+        // 6. Convert engine symbols to JavaScript eval-ready symbols
         let jsExpr = norm.replace(/&/g, '&&').replace(/\|/g, '||').replace(/~/g, '!');
         jsExpr = jsExpr.replace(/([01!&|()]+)\^([01!&|()]+)/g, '!!($1) !== !!($2)'); 
 
@@ -1110,7 +1126,6 @@
             throw new Error(`Invalid Boolean Expression context: ${expr}`);
         }
     }
-
     function quineMcCluskey(targets, dontCares, numVars) {
         if (targets.length === 0) return [];
         let allTerms = [...new Set([...targets, ...dontCares])];
