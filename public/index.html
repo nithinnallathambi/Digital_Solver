@@ -10,6 +10,41 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     
     <style>
+                /* Custom File Inputs */
+        .custom-file-input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            background: var(--bg-input);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        
+        .custom-file-input:hover, .custom-file-input:focus {
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+        
+        .custom-file-input::file-selector-button {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: var(--primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: var(--radius-sm);
+            margin-right: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .custom-file-input::file-selector-button:hover {
+            background: var(--primary);
+            color: #ffffff;
+        }
         :root {
             /* Base Core Colors */
             --primary: #6366f1;
@@ -460,6 +495,18 @@
                 <label for="prompt">Problem Statement / Expression Prompt</label>
                 <textarea id="prompt" placeholder="Ask AI to help design or optimize a digital logic circuit (e.g. 'Create a 3-input majority voter circuit with sensors for Temperature, Pressure, and Humidity')..."></textarea>
 
+                <!-- NEW: Multimodal File Uploads -->
+                <div class="grid-2" style="margin-bottom: 1.25rem;">
+                    <div class="upload-box">
+                        <label for="aiImageInput">📸 Upload Circuit Diagram (Image)</label>
+                        <input type="file" id="aiImageInput" accept="image/*" class="custom-file-input">
+                    </div>
+                    <div class="upload-box">
+                        <label for="aiAudioInput">🎤 Voice Description (Audio)</label>
+                        <input type="file" id="aiAudioInput" accept="audio/*" class="custom-file-input">
+                    </div>
+                </div>
+                
                 <button id="submitBtn" class="primary-btn">Ask AI Assistant & Map Variables ⚡</button>
 
                 <label style="margin-top: 1.25rem;">Expression Output</label>
@@ -807,24 +854,37 @@
         window.onscroll = () => { scrollTopBtn.style.display = window.scrollY > 300 ? "block" : "none"; };
         scrollTopBtn.onclick = () => { window.scrollTo({top: 0, behavior: 'smooth'}); };
 
+
         // Gemini AI Logic - BOOLEAN EXPRESSION + MAPPING ENHANCED
         document.getElementById('submitBtn').addEventListener('click', async () => {
             const userPrompt = document.getElementById('prompt').value.trim();
             const output = document.getElementById('responseOutput');
             const exprInput = document.getElementById('inputExpr');
+            
+            // NEW: Grab the uploaded files from the DOM
+            const imageFile = document.getElementById('aiImageInput')?.files[0];
+            const audioFile = document.getElementById('aiAudioInput')?.files[0];
 
-            if (!userPrompt) {
-                output.textContent = 'Please enter a circuit description.';
+            // NEW: Ensure at least ONE input method is provided
+            if (!userPrompt && !imageFile && !audioFile) {
+                output.textContent = 'Please enter a circuit description, upload an image, or upload audio.';
                 return;
             }
 
             output.textContent = 'Analyzing logic description & generating expression...';
 
             try {
+                // NEW: Package data into FormData so files can be sent securely
+                const formData = new FormData();
+                if (userPrompt) formData.append('prompt', userPrompt);
+                if (imageFile) formData.append('image', imageFile);
+                if (audioFile) formData.append('audio', audioFile);
+
                 const response = await fetch('/api/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: userPrompt })
+                    // Note: 'Content-Type' header is intentionally removed!
+                    // The browser will automatically set the correct multipart/form-data boundary.
+                    body: formData
                 });
 
                 const data = await response.json();
