@@ -1,18 +1,23 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { Config } from "@netlify/functions";
+import { GoogleGenAI } from '@google/genai';
 
-// Initialize the Gemini SDK
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Initialize the NEW Gemini SDK
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
 
-export async function POST(req: Request) {
+export default async (req: Request) => {
     try {
-        // 1. Parse FormData instead of JSON
+        // 1. Parse FormData instead of JSON (supports text, images, and audio)
         const formData = await req.formData();
         const prompt = formData.get('prompt') as string;
-        
-        // Extract the raw files sent from the frontend
         const imageFile = formData.get('image') as File | null;
         const audioFile = formData.get('audio') as File | null;
 
+        // Ensure the user sent at least something
+        if (!prompt && !imageFile && !audioFile) {
+            return Response.json({ error: 'Please provide a prompt, image, or audio.' }, { status: 400 });
+        }
+
+        // 2. Define strict System Instructions
         const systemInstruction = `
         You are an interactive digital logic engineering assistant. 
         Analyze the user's problem statement and design a logic circuit.
@@ -30,10 +35,16 @@ export async function POST(req: Request) {
         }
         `;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-3.7-flash' });
-        const contentParts: any[] = [{ text: systemInstruction + "\n\nUser Request: " + (prompt || "See attached media.") }];
+        // 3. Build the payload for the new SDK
+        const contentParts: any[] = [];
+        
+        if (prompt) {
+            contentParts.push(`User Request: ${prompt}`);
+        } else {
+            contentParts.push("Analyze the attached media and design the logic circuit.");
+        }
 
-        // 2. Convert raw image file to Base64 for the Gemini API
+        // Convert raw image to Base64
         if (imageFile) {
             const arrayBuffer = await imageFile.arrayBuffer();
             const base64Data = Buffer.from(arrayBuffer).toString("base64");
@@ -42,7 +53,7 @@ export async function POST(req: Request) {
             });
         }
         
-        // 3. Convert raw audio file to Base64 for the Gemini API
+        // Convert raw audio to Base64
         if (audioFile) {
             const arrayBuffer = await audioFile.arrayBuffer();
             const base64Data = Buffer.from(arrayBuffer).toString("base64");
@@ -51,11 +62,21 @@ export async function POST(req: Request) {
             });
         }
 
-        // Generate response
-        const result = await model.generateContent(contentParts);
-        const responseText = result.response.text();
+        // 4. Generate content using the new SDK syntax
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: contentParts,
+            config: {
+                systemInstruction: systemInstruction,
+                responseMimeType: "application/json" // Forces Gemini to output pure JSON
+            }
+        });
 
-        // Strip out markdown code blocks if the AI wraps the JSON
+        // 5. Parse and return the response
+        // Note: In the new SDK, `response.text` is a property, NOT a function()
+        const responseText = response.text || "{}";
+
+        // Strip out markdown code blocks just in case Gemini includes them
         const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         return Response.json(JSON.parse(cleanJson));
@@ -63,20 +84,23 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error("AI Generation Error:", error);
         
-        // Handle Token/Quota Limits gracefully without crashing
         const errMsg = error.message?.toLowerCase() || "";
         if (error.status === 429 || errMsg.includes('quota') || errMsg.includes('token') || errMsg.includes('429')) {
             return Response.json(
-                { error: "Token limit exceeded or quota reached. Please report this to the admin or try a shorter prompt." },
+                { error: "Token limit exceeded or quota reached. Please try a shorter prompt." },
                 { status: 429 }
             );
         }
 
-
-        // Generic fallback error
         return Response.json(
             { error: "The AI encountered a processing issue. Please refine your prompt and try again." },
             { status: 500 }
         );
     }
-}
+};
+
+// Netlify routing configuration
+export const config: Config = {
+    path: "/api/generate",
+    method: "POST",
+};
