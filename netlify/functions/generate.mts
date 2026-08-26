@@ -1,4 +1,3 @@
-// generate.mts (Next.js App Router Example)
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize the Gemini SDK
@@ -6,11 +5,14 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
     try {
-        const body = await req.json();
-        const { prompt, imageBase64, audioBase64 } = body;
+        // 1. Parse FormData instead of JSON
+        const formData = await req.formData();
+        const prompt = formData.get('prompt') as string;
+        
+        // Extract the raw files sent from the frontend
+        const imageFile = formData.get('image') as File | null;
+        const audioFile = formData.get('audio') as File | null;
 
-        // The system instruction forces the AI to output strictly structured JSON
-        // with a conversational yet concise response, and strict A-F variable mapping.
         const systemInstruction = `
         You are an interactive digital logic engineering assistant. 
         Analyze the user's problem statement and design a logic circuit.
@@ -29,22 +31,27 @@ export async function POST(req: Request) {
         `;
 
         const model = genAI.getGenerativeModel({ model: 'gemini-3.7-flash' });
+        const contentParts: any[] = [{ text: systemInstruction + "\n\nUser Request: " + (prompt || "See attached media.") }];
 
-        // Build the multimodal payload
-        const contentParts: any[] = [{ text: systemInstruction + "\n\nUser Request: " + prompt }];
-
-        if (imageBase64) {
+        // 2. Convert raw image file to Base64 for the Gemini API
+        if (imageFile) {
+            const arrayBuffer = await imageFile.arrayBuffer();
+            const base64Data = Buffer.from(arrayBuffer).toString("base64");
             contentParts.push({
-                inlineData: { data: imageBase64, mimeType: "image/jpeg" }
+                inlineData: { data: base64Data, mimeType: imageFile.type || "image/jpeg" }
             });
         }
         
-        if (audioBase64) {
+        // 3. Convert raw audio file to Base64 for the Gemini API
+        if (audioFile) {
+            const arrayBuffer = await audioFile.arrayBuffer();
+            const base64Data = Buffer.from(arrayBuffer).toString("base64");
             contentParts.push({
-                inlineData: { data: audioBase64, mimeType: "audio/mp3" }
+                inlineData: { data: base64Data, mimeType: audioFile.type || "audio/mp3" }
             });
         }
 
+        // Generate response
         const result = await model.generateContent(contentParts);
         const responseText = result.response.text();
 
