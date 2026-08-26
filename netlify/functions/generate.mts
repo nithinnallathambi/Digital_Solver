@@ -72,6 +72,7 @@ export async function POST(req: Request) {
             );
         }
 
+
         // Generic fallback error
         return Response.json(
             { error: "The AI encountered a processing issue. Please refine your prompt and try again." },
